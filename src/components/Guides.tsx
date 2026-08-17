@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { guides } from '../data';
+import { guides } from '../domain/catalog';
 import { ChevronDown } from 'lucide-react';
 
 export default function Guides() {

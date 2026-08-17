@@ -1,7 +1,15 @@
 import { useState, useMemo } from 'react';
-import { cabinets, processors } from '../data';
 import { Settings2, Cpu, Download } from 'lucide-react';
-import type { Cabinet, Processor } from '../types';
+
+import { cabinets, processors, type Cabinet, type Processor } from '../domain/catalog';
+import { calculateProject, validateProject, type ProjectInput } from '../domain/calculate';
+import { DATA_CABLE_COLORS, POWER_CABLE_COLORS } from '../domain/routing/palette';
+import {
+  planRoutes,
+  type GridPosition,
+  type RoutingPriority,
+  type StartCorner,
+} from '../domain/routing/serpentine';
 
 import RoutingDrawings from './RoutingDrawings';
 
@@ -55,78 +63,39 @@ export default function Calculator() {
     ? customProcessor
     : processors.find((p) => p.id === selectedProcessorId) || processors[0];
 
-  const results = useMemo(() => {
-    let finalCols = 0;
-    let finalRows = 0;
+  const projectInput = useMemo<ProjectInput>(
+    () => ({
+      target:
+        calcMode === 'dimensions'
+          ? { mode: 'dimensions', widthM: targetWidth, heightM: targetHeight }
+          : { mode: 'count', cols, rows },
+      cabinet: activeCabinet,
+      processor: activeProcessor,
+      voltage,
+      breakerAmps,
+      cableLoopAmps,
+    }),
+    [
+      calcMode,
+      targetWidth,
+      targetHeight,
+      cols,
+      rows,
+      activeCabinet,
+      activeProcessor,
+      breakerAmps,
+      cableLoopAmps,
+    ],
+  );
 
-    if (calcMode === 'dimensions') {
-      const cabWidthM = activeCabinet.width / 1000;
-      const cabHeightM = activeCabinet.height / 1000;
-      finalCols = Math.ceil(targetWidth / cabWidthM);
-      finalRows = Math.ceil(targetHeight / cabHeightM);
-    } else {
-      finalCols = cols;
-      finalRows = rows;
-    }
-
-    const totalCabinets = finalCols * finalRows;
-    const arrayWidthM = (finalCols * activeCabinet.width) / 1000;
-    const arrayHeightM = (finalRows * activeCabinet.height) / 1000;
-    const resX = finalCols * activeCabinet.resX;
-    const resY = finalRows * activeCabinet.resY;
-    const totalPixels = resX * resY;
-    const maxPowerW = totalCabinets * activeCabinet.maxPower;
-    const avgPowerW = totalCabinets * activeCabinet.avgPower;
-    const maxAmps = maxPowerW / voltage;
-    const weightTotal = totalCabinets * activeCabinet.weight;
-
-    // Data Cables Calculation
-    const pixelsPerCabinet = activeCabinet.resX * activeCabinet.resY;
-    const cabinetsPerDataPort = Math.max(
-      1,
-      Math.floor(activeProcessor.maxPixelsPerPort / pixelsPerCabinet),
-    );
-    const dataCablesNeeded = Math.ceil(totalCabinets / cabinetsPerDataPort);
-
-    // Power Cables Calculation (Account for physical cable limit + breaker derating)
-    const effectiveAmpsPerLine = Math.min(breakerAmps * 0.8, cableLoopAmps);
-    const powerPerCircuit = voltage * effectiveAmpsPerLine;
-    const cabinetsPerPowerCable = Math.max(1, Math.floor(powerPerCircuit / activeCabinet.maxPower));
-    const powerCablesNeeded = Math.ceil(totalCabinets / cabinetsPerPowerCable);
-
-    return {
-      cols: finalCols,
-      rows: finalRows,
-      totalCabinets,
-      arrayWidthM,
-      arrayHeightM,
-      resX,
-      resY,
-      totalPixels,
-      maxPowerW,
-      avgPowerW,
-      maxAmps,
-      weightTotal,
-      dataCablesNeeded,
-      powerCablesNeeded,
-      cabinetsPerDataPort,
-      cabinetsPerPowerCable,
-      effectiveAmpsPerLine,
-    };
-  }, [
-    calcMode,
-    activeCabinet,
-    activeProcessor,
-    targetWidth,
-    targetHeight,
-    cols,
-    rows,
-    voltage,
-    breakerAmps,
-    cableLoopAmps,
-  ]);
+  const issues = useMemo(() => validateProject(projectInput), [projectInput]);
+  const results = useMemo(
+    () => (issues.length === 0 ? calculateProject(projectInput) : null),
+    [projectInput, issues],
+  );
 
   const exportToPDF = async () => {
+    if (!results) return;
     try {
       const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
         import('jspdf'),
@@ -187,10 +156,7 @@ export default function Calculator() {
         head: [['Data & Processing', 'Value']],
         body: [
           ['Processor Model', `${activeProcessor.brand} ${activeProcessor.model}`],
-          [
-            'Total Units Needed',
-            `${Math.ceil(results.dataCablesNeeded / activeProcessor.dataPorts)}`,
-          ],
+          ['Total Units Needed', `${results.processorsNeeded}`],
           ['Main Data Cables Needed', `${results.dataCablesNeeded}`],
           ['Cabinets per Data Loop', `${results.cabinetsPerDataPort}`],
         ],
@@ -227,8 +193,8 @@ export default function Calculator() {
 
       const drawSchematic = (
         title: string,
-        chunks: { x: number; y: number }[][],
-        colors: string[],
+        chunks: GridPosition[][],
+        colors: readonly string[],
         startY: number,
       ) => {
         doc.setFontSize(14);
@@ -309,101 +275,32 @@ export default function Calculator() {
         return offsetY + results.rows * cellHeight + 15;
       };
 
-      const DATA_COLORS = [
-        '#8b5cf6',
-        '#06b6d4',
-        '#10b981',
-        '#f59e0b',
-        '#f97316',
-        '#3b82f6',
-        '#ec4899',
-      ];
-      const POWER_COLORS = ['#e74c3c', '#f97316', '#f59e0b', '#eab308', '#dc2626'];
-
-      const generateAutoChunks = (maxCap: number) => {
-        const sequence: { x: number; y: number }[] = [];
-        if (routingPriority === 'vertical') {
-          const startX = routingStart.includes('right') ? results.cols - 1 : 0;
-          const startYPos = routingStart.includes('bottom') ? results.rows - 1 : 0;
-          const stepX = routingStart.includes('right') ? -1 : 1;
-          for (let c = 0; c < results.cols; c++) {
-            const x = startX + c * stepX;
-            const isEvenCol = c % 2 === 0;
-            const currentStartY = isEvenCol
-              ? startYPos
-              : routingStart.includes('bottom')
-                ? 0
-                : results.rows - 1;
-            const stepY = isEvenCol
-              ? routingStart.includes('bottom')
-                ? -1
-                : 1
-              : routingStart.includes('bottom')
-                ? 1
-                : -1;
-            for (let r = 0; r < results.rows; r++) {
-              sequence.push({ x, y: currentStartY + r * stepY });
-            }
-          }
-        } else {
-          const startX = routingStart.includes('right') ? results.cols - 1 : 0;
-          const startYPos = routingStart.includes('bottom') ? results.rows - 1 : 0;
-          const stepY = routingStart.includes('bottom') ? -1 : 1;
-          for (let r = 0; r < results.rows; r++) {
-            const y = startYPos + r * stepY;
-            const isEvenRow = r % 2 === 0;
-            const currentStartX = isEvenRow
-              ? startX
-              : routingStart.includes('right')
-                ? 0
-                : results.cols - 1;
-            const stepX = isEvenRow
-              ? routingStart.includes('right')
-                ? -1
-                : 1
-              : routingStart.includes('right')
-                ? 1
-                : -1;
-            for (let c = 0; c < results.cols; c++) {
-              sequence.push({ x: currentStartX + c * stepX, y });
-            }
-          }
-        }
-
-        const totalModules = sequence.length;
-        if (totalModules === 0) return [];
-        const numCables = Math.ceil(totalModules / maxCap);
-        const baseCount = Math.floor(totalModules / numCables);
-        const remainder = totalModules % numCables;
-
-        const chunks: { x: number; y: number }[][] = [];
-        let currentIndex = 0;
-        for (let i = 0; i < numCables; i++) {
-          const currentCapacity = baseCount + (i < remainder ? 1 : 0);
-          chunks.push(sequence.slice(currentIndex, currentIndex + currentCapacity));
-          currentIndex += currentCapacity;
-        }
-        return chunks;
+      const layout = {
+        cols: results.cols,
+        rows: results.rows,
+        priority: routingPriority,
+        start: routingStart,
       };
-
       const dataChunksToDraw =
-        routingMode === 'auto' ? generateAutoChunks(results.cabinetsPerDataPort) : manualDataRoutes;
+        routingMode === 'auto'
+          ? planRoutes({ ...layout, capacity: results.cabinetsPerDataPort })
+          : manualDataRoutes;
       const powerChunksToDraw =
         routingMode === 'auto'
-          ? generateAutoChunks(results.cabinetsPerPowerCable)
+          ? planRoutes({ ...layout, capacity: results.cabinetsPerPowerCable })
           : manualPowerRoutes;
 
       doc.addPage();
       const dataSchematicEndY = drawSchematic(
         `Data Routing Schematic (${results.cabinetsPerDataPort} cab/line max)`,
         dataChunksToDraw,
-        DATA_COLORS,
+        DATA_CABLE_COLORS,
         20,
       );
       drawSchematic(
         `Power Routing Schematic (${results.cabinetsPerPowerCable} cab/line max)`,
         powerChunksToDraw,
-        POWER_COLORS,
+        POWER_CABLE_COLORS,
         dataSchematicEndY,
       );
 
@@ -422,19 +319,17 @@ export default function Calculator() {
   };
 
   const [routingType, setRoutingType] = useState<'data' | 'power'>('data');
-  const [routingPriority, setRoutingPriority] = useState<'vertical' | 'horizontal'>('vertical');
-  const [routingStart, setRoutingStart] = useState<
-    'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
-  >('bottom-left');
+  const [routingPriority, setRoutingPriority] = useState<RoutingPriority>('vertical');
+  const [routingStart, setRoutingStart] = useState<StartCorner>('bottom-left');
 
   const [routingMode, setRoutingMode] = useState<'auto' | 'manual'>('auto');
-  const [manualDataRoutes, setManualDataRoutes] = useState<{ x: number; y: number }[][]>([[]]);
-  const [manualPowerRoutes, setManualPowerRoutes] = useState<{ x: number; y: number }[][]>([[]]);
+  const [manualDataRoutes, setManualDataRoutes] = useState<GridPosition[][]>([[]]);
+  const [manualPowerRoutes, setManualPowerRoutes] = useState<GridPosition[][]>([[]]);
 
   // Hand-drawn routes hold cell coordinates, so they are only valid for the grid
   // they were drawn on. The grid comes from `results`, which in 'dimensions' mode
   // also changes with the target size and the selected cabinet — not just cols/rows.
-  const routedGrid = `${results.cols}x${results.rows}`;
+  const routedGrid = results ? `${results.cols}x${results.rows}` : 'none';
   const [drawnOnGrid, setDrawnOnGrid] = useState(routedGrid);
   if (drawnOnGrid !== routedGrid) {
     setDrawnOnGrid(routedGrid);
@@ -451,6 +346,7 @@ export default function Calculator() {
         </h1>
         <button
           onClick={() => void exportToPDF()}
+          disabled={!results}
           className="flex items-center gap-2 bg-[#CCFF00] text-black px-4 py-2 text-[10px] font-bold uppercase tracking-wider rounded-sm hover:bg-[#aacc00] transition-colors shadow-lg"
         >
           <Download className="w-3.5 h-3.5" />
@@ -460,6 +356,7 @@ export default function Calculator() {
       <div className="p-4 bg-[#111] border-b border-[#333] flex justify-between items-center sm:hidden">
         <button
           onClick={() => void exportToPDF()}
+          disabled={!results}
           className="flex-1 flex justify-center items-center gap-2 bg-[#CCFF00] text-black px-4 py-3 text-[10px] font-bold uppercase tracking-wider rounded-sm hover:bg-[#aacc00] transition-colors"
         >
           <Download className="w-4 h-4" />
@@ -472,6 +369,18 @@ export default function Calculator() {
           <p className="px-4 py-3 bg-[#2C1A17] border-b border-[#FF4444] text-[#FF9F91] text-xs">
             {exportError}
           </p>
+        )}
+        {issues.length > 0 && (
+          <div className="px-4 py-3 bg-[#2C1A17] border-b border-[#FF4444]">
+            <p className="text-[#FF4444] text-[11px] font-bold uppercase tracking-widest mb-1.5">
+              {issues.length === 1 ? 'Check this value' : `Check these ${issues.length} values`}
+            </p>
+            <ul className="text-[#FF9F91] text-xs space-y-1">
+              {issues.map((issue) => (
+                <li key={issue.field}>{issue.message}</li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
 
@@ -703,40 +612,44 @@ export default function Calculator() {
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <div className="flex justify-between border-b border-[#222] pb-1">
-                  <span className="text-[10px] opacity-50 uppercase">Total Cabinets</span>
-                  <span className="font-mono text-white text-xs">
-                    {results.cols} × {results.rows} = {results.totalCabinets}
-                  </span>
+            {results ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <div className="flex justify-between border-b border-[#222] pb-1">
+                    <span className="text-[10px] opacity-50 uppercase">Total Cabinets</span>
+                    <span className="font-mono text-white text-xs">
+                      {results.cols} × {results.rows} = {results.totalCabinets}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-b border-[#222] pb-1">
+                    <span className="text-[10px] opacity-50 uppercase">Physical Size</span>
+                    <span className="font-mono text-white text-xs">
+                      {results.arrayWidthM.toFixed(2)}m × {results.arrayHeightM.toFixed(2)}m
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-b border-[#222] pb-1">
+                    <span className="text-[10px] opacity-50 uppercase">Total Weight</span>
+                    <span className="font-mono text-white text-xs">
+                      {results.weightTotal.toLocaleString()} kg
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between border-b border-[#222] pb-1">
-                  <span className="text-[10px] opacity-50 uppercase">Physical Size</span>
-                  <span className="font-mono text-white text-xs">
-                    {results.arrayWidthM.toFixed(2)}m × {results.arrayHeightM.toFixed(2)}m
-                  </span>
-                </div>
-                <div className="flex justify-between border-b border-[#222] pb-1">
-                  <span className="text-[10px] opacity-50 uppercase">Total Weight</span>
-                  <span className="font-mono text-white text-xs">
-                    {results.weightTotal.toLocaleString()} kg
-                  </span>
+                <div className="bg-[#111] border border-[#333] p-4 flex flex-col justify-center items-center text-center">
+                  <div className="text-[10px] uppercase opacity-40 mb-2">Total Resolution</div>
+                  <div className="text-xl sm:text-2xl font-mono tracking-tighter text-white">
+                    {results.resX.toLocaleString()}
+                  </div>
+                  <div className="text-[10px] font-mono text-[#CCFF00]">
+                    × {results.resY.toLocaleString()} px
+                  </div>
+                  <div className="mt-2 text-[9px] uppercase opacity-40">
+                    Pixels: {results.totalPixels.toLocaleString()}
+                  </div>
                 </div>
               </div>
-              <div className="bg-[#111] border border-[#333] p-4 flex flex-col justify-center items-center text-center">
-                <div className="text-[10px] uppercase opacity-40 mb-2">Total Resolution</div>
-                <div className="text-xl sm:text-2xl font-mono tracking-tighter text-white">
-                  {results.resX.toLocaleString()}
-                </div>
-                <div className="text-[10px] font-mono text-[#CCFF00]">
-                  × {results.resY.toLocaleString()} px
-                </div>
-                <div className="mt-2 text-[9px] uppercase opacity-40">
-                  Pixels: {results.totalPixels.toLocaleString()}
-                </div>
-              </div>
-            </div>
+            ) : (
+              <AwaitingInput />
+            )}
           </div>
         </div>
 
@@ -811,33 +724,37 @@ export default function Calculator() {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <div className="bg-[#161616] p-3 border border-[#333]">
-                  <div className="text-[9px] opacity-40 uppercase">Main Data Cables Req.</div>
-                  <div className="text-xl sm:text-2xl font-mono text-fuchsia-400">
-                    {results.dataCablesNeeded}
-                  </div>
-                  <div className="text-[9px] opacity-60 mt-1">
-                    ~{results.cabinetsPerDataPort} cab / cable
-                  </div>
-                </div>
-                <div
-                  className={`bg-[#161616] p-3 border ${results.dataCablesNeeded > activeProcessor.dataPorts ? 'border-[#FF4444]' : 'border-[#333]'}`}
-                >
-                  <div className="text-[9px] opacity-40 uppercase">Processors Needed</div>
-                  <div
-                    className={`text-xl sm:text-2xl font-mono ${results.dataCablesNeeded > activeProcessor.dataPorts ? 'text-[#FF4444]' : 'text-white'}`}
-                  >
-                    {Math.ceil(results.dataCablesNeeded / activeProcessor.dataPorts)}
-                    <span className="text-xs ml-1 opacity-50">units</span>
-                  </div>
-                  {results.dataCablesNeeded > activeProcessor.dataPorts && (
-                    <div className="text-[9px] text-[#FF4444] mt-1 font-bold tracking-widest uppercase">
-                      CAPACITY EXCEEDED!
+              {results ? (
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div className="bg-[#161616] p-3 border border-[#333]">
+                    <div className="text-[9px] opacity-40 uppercase">Main Data Cables Req.</div>
+                    <div className="text-xl sm:text-2xl font-mono text-fuchsia-400">
+                      {results.dataCablesNeeded}
                     </div>
-                  )}
+                    <div className="text-[9px] opacity-60 mt-1">
+                      ~{results.cabinetsPerDataPort} cab / cable
+                    </div>
+                  </div>
+                  <div
+                    className={`bg-[#161616] p-3 border ${results.dataCablesNeeded > activeProcessor.dataPorts ? 'border-[#FF4444]' : 'border-[#333]'}`}
+                  >
+                    <div className="text-[9px] opacity-40 uppercase">Processors Needed</div>
+                    <div
+                      className={`text-xl sm:text-2xl font-mono ${results.dataCablesNeeded > activeProcessor.dataPorts ? 'text-[#FF4444]' : 'text-white'}`}
+                    >
+                      {results.processorsNeeded}
+                      <span className="text-xs ml-1 opacity-50">units</span>
+                    </div>
+                    {results.dataCablesNeeded > activeProcessor.dataPorts && (
+                      <div className="text-[9px] text-[#FF4444] mt-1 font-bold tracking-widest uppercase">
+                        CAPACITY EXCEEDED!
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <AwaitingInput />
+              )}
             </div>
           </div>
 
@@ -897,37 +814,41 @@ export default function Calculator() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mt-2">
-                <div className="bg-black p-3 border border-[#333] flex flex-col justify-center">
-                  <div className="text-[9px] opacity-40 uppercase">Main Power Cables Req.</div>
-                  <div className="text-xl sm:text-2xl font-mono text-amber-400">
-                    {results.powerCablesNeeded}
-                  </div>
-                  <div className="text-[9px] opacity-60 mt-1 flex justify-between">
-                    <span>Max {results.cabinetsPerPowerCable} cbs/cable</span>
-                    <span>({results.effectiveAmpsPerLine.toFixed(1)}A cap)</span>
-                  </div>
-                </div>
-                <div
-                  className={`bg-black p-3 border flex flex-col justify-center ${results.maxAmps > pduCapacityAmps ? 'border-[#FF4444]' : 'border-[#333]'}`}
-                >
-                  <div className="text-[9px] opacity-40 uppercase">Total Load / Peak Amp</div>
-                  <div
-                    className={`text-xl sm:text-2xl font-mono ${results.maxAmps > pduCapacityAmps ? 'text-[#FF4444]' : 'text-white'}`}
-                  >
-                    {results.maxAmps.toFixed(1)} A
-                    <span className="text-xs opacity-50 ml-1">/ {pduCapacityAmps}A</span>
-                  </div>
-                  <div className="text-[9px] opacity-60 mt-1">
-                    Max Power: {(results.maxPowerW / 1000).toFixed(1)} kW
-                  </div>
-                  {results.maxAmps > pduCapacityAmps && (
-                    <div className="text-[9px] text-[#FF4444] font-bold uppercase mt-2 border-t border-[#FF4444] pt-1 pt-2">
-                      ¡Carga excede capacidad del circuito/PDU!
+              {results ? (
+                <div className="grid grid-cols-2 gap-4 mt-2">
+                  <div className="bg-black p-3 border border-[#333] flex flex-col justify-center">
+                    <div className="text-[9px] opacity-40 uppercase">Main Power Cables Req.</div>
+                    <div className="text-xl sm:text-2xl font-mono text-amber-400">
+                      {results.powerCablesNeeded}
                     </div>
-                  )}
+                    <div className="text-[9px] opacity-60 mt-1 flex justify-between">
+                      <span>Max {results.cabinetsPerPowerCable} cbs/cable</span>
+                      <span>({results.ampsPerLine.toFixed(1)}A cap)</span>
+                    </div>
+                  </div>
+                  <div
+                    className={`bg-black p-3 border flex flex-col justify-center ${results.maxAmps > pduCapacityAmps ? 'border-[#FF4444]' : 'border-[#333]'}`}
+                  >
+                    <div className="text-[9px] opacity-40 uppercase">Total Load / Peak Amp</div>
+                    <div
+                      className={`text-xl sm:text-2xl font-mono ${results.maxAmps > pduCapacityAmps ? 'text-[#FF4444]' : 'text-white'}`}
+                    >
+                      {results.maxAmps.toFixed(1)} A
+                      <span className="text-xs opacity-50 ml-1">/ {pduCapacityAmps}A</span>
+                    </div>
+                    <div className="text-[9px] opacity-60 mt-1">
+                      Max Power: {(results.maxPowerW / 1000).toFixed(1)} kW
+                    </div>
+                    {results.maxAmps > pduCapacityAmps && (
+                      <div className="text-[9px] text-[#FF4444] font-bold uppercase mt-2 border-t border-[#FF4444] pt-1 pt-2">
+                        ¡Carga excede capacidad del circuito/PDU!
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <AwaitingInput />
+              )}
             </div>
           </div>
         </div>
@@ -935,27 +856,37 @@ export default function Calculator() {
 
       {/* Schematics Section */}
       <section className="border-b border-[#333]">
-        <RoutingDrawings
-          cols={results.cols}
-          rows={results.rows}
-          cabinetWidth={activeCabinet.width}
-          cabinetHeight={activeCabinet.height}
-          dataMaxCapacity={results.cabinetsPerDataPort}
-          powerMaxCapacity={results.cabinetsPerPowerCable}
-          routingType={routingType}
-          setRoutingType={setRoutingType}
-          routingPriority={routingPriority}
-          setRoutingPriority={setRoutingPriority}
-          routingStart={routingStart}
-          setRoutingStart={setRoutingStart}
-          routingMode={routingMode}
-          setRoutingMode={setRoutingMode}
-          manualDataRoutes={manualDataRoutes}
-          setManualDataRoutes={setManualDataRoutes}
-          manualPowerRoutes={manualPowerRoutes}
-          setManualPowerRoutes={setManualPowerRoutes}
-        />
+        {results && (
+          <RoutingDrawings
+            cols={results.cols}
+            rows={results.rows}
+            cabinetWidth={activeCabinet.width}
+            cabinetHeight={activeCabinet.height}
+            dataMaxCapacity={results.cabinetsPerDataPort}
+            powerMaxCapacity={results.cabinetsPerPowerCable}
+            routingType={routingType}
+            setRoutingType={setRoutingType}
+            routingPriority={routingPriority}
+            setRoutingPriority={setRoutingPriority}
+            routingStart={routingStart}
+            setRoutingStart={setRoutingStart}
+            routingMode={routingMode}
+            setRoutingMode={setRoutingMode}
+            manualDataRoutes={manualDataRoutes}
+            setManualDataRoutes={setManualDataRoutes}
+            manualPowerRoutes={manualPowerRoutes}
+            setManualPowerRoutes={setManualPowerRoutes}
+          />
+        )}
       </section>
     </div>
+  );
+}
+
+function AwaitingInput() {
+  return (
+    <p className="text-[11px] font-mono text-neutral-500 py-2">
+      No results yet — see the note at the top of this screen.
+    </p>
   );
 }

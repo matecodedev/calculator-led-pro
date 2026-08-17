@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { cabinets } from '../data';
+import { cabinets } from '../domain/catalog';
 import { Box, Search } from 'lucide-react';
 
 export default function Library() {

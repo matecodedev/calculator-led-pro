@@ -1,18 +1,14 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Route, Zap, Network } from 'lucide-react';
 
-const DATA_COLORS = [
-  '#CCFF00',
-  '#06b6d4',
-  '#10b981',
-  '#f59e0b',
-  '#f97316',
-  '#3b82f6',
-  '#8b5cf6',
-  '#d946ef',
-  '#ec4899',
-];
-const POWER_COLORS = ['#FF4444', '#f97316', '#f59e0b', '#eab308', '#dc2626'];
+import { cableColors, OVER_CAPACITY_COLOR, type CableLayer } from '../domain/routing/palette';
+import {
+  planRoutes,
+  START_CORNERS,
+  type GridPosition,
+  type RoutingPriority,
+  type StartCorner,
+} from '../domain/routing/serpentine';
 
 interface Props {
   cols: number;
@@ -21,19 +17,26 @@ interface Props {
   cabinetHeight: number;
   dataMaxCapacity: number;
   powerMaxCapacity: number;
-  routingType: 'data' | 'power';
-  setRoutingType: (t: 'data' | 'power') => void;
-  routingPriority: 'vertical' | 'horizontal';
-  setRoutingPriority: (t: 'vertical' | 'horizontal') => void;
-  routingStart: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
-  setRoutingStart: (t: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right') => void;
+  routingType: CableLayer;
+  setRoutingType: (t: CableLayer) => void;
+  routingPriority: RoutingPriority;
+  setRoutingPriority: (t: RoutingPriority) => void;
+  routingStart: StartCorner;
+  setRoutingStart: (t: StartCorner) => void;
   routingMode: 'auto' | 'manual';
   setRoutingMode: (m: 'auto' | 'manual') => void;
-  manualDataRoutes: { x: number; y: number }[][];
-  setManualDataRoutes: React.Dispatch<React.SetStateAction<{ x: number; y: number }[][]>>;
-  manualPowerRoutes: { x: number; y: number }[][];
-  setManualPowerRoutes: React.Dispatch<React.SetStateAction<{ x: number; y: number }[][]>>;
+  manualDataRoutes: GridPosition[][];
+  setManualDataRoutes: React.Dispatch<React.SetStateAction<GridPosition[][]>>;
+  manualPowerRoutes: GridPosition[][];
+  setManualPowerRoutes: React.Dispatch<React.SetStateAction<GridPosition[][]>>;
 }
+
+/** Human-readable label for a starting corner, e.g. "Bottom-Left". */
+const cornerLabel = (corner: StartCorner) =>
+  corner
+    .split('-')
+    .map((part) => part[0].toUpperCase() + part.slice(1))
+    .join('-');
 
 export default function RoutingDrawings({
   cols,
@@ -56,80 +59,21 @@ export default function RoutingDrawings({
   setManualPowerRoutes,
 }: Props) {
   const maxCapacity = routingType === 'data' ? dataMaxCapacity : powerMaxCapacity;
-  const colors = routingType === 'data' ? DATA_COLORS : POWER_COLORS;
+  const colors = cableColors(routingType);
 
-  const generateChunksForCapacity = useCallback(
-    (capacity: number) => {
-      const sequence: { x: number; y: number }[] = [];
-
-      if (routingPriority === 'vertical') {
-        const startX = routingStart.includes('right') ? cols - 1 : 0;
-        const startY = routingStart.includes('bottom') ? rows - 1 : 0;
-        const stepX = routingStart.includes('right') ? -1 : 1;
-
-        for (let c = 0; c < cols; c++) {
-          const x = startX + c * stepX;
-          const isEvenCol = c % 2 === 0;
-          const currentStartY = isEvenCol ? startY : routingStart.includes('bottom') ? 0 : rows - 1;
-          const stepY = isEvenCol
-            ? routingStart.includes('bottom')
-              ? -1
-              : 1
-            : routingStart.includes('bottom')
-              ? 1
-              : -1;
-
-          for (let r = 0; r < rows; r++) {
-            const y = currentStartY + r * stepY;
-            sequence.push({ x, y });
-          }
-        }
-      } else {
-        const startX = routingStart.includes('right') ? cols - 1 : 0;
-        const startY = routingStart.includes('bottom') ? rows - 1 : 0;
-        const stepY = routingStart.includes('bottom') ? -1 : 1;
-
-        for (let r = 0; r < rows; r++) {
-          const y = startY + r * stepY;
-          const isEvenRow = r % 2 === 0;
-          const currentStartX = isEvenRow ? startX : routingStart.includes('right') ? 0 : cols - 1;
-          const stepX = isEvenRow
-            ? routingStart.includes('right')
-              ? -1
-              : 1
-            : routingStart.includes('right')
-              ? 1
-              : -1;
-
-          for (let c = 0; c < cols; c++) {
-            const x = currentStartX + c * stepX;
-            sequence.push({ x, y });
-          }
-        }
-      }
-
-      const totalModules = sequence.length;
-      if (totalModules === 0) return [];
-
-      const numCables = Math.ceil(totalModules / capacity);
-      const baseCount = Math.floor(totalModules / numCables);
-      const remainder = totalModules % numCables;
-
-      const res: { x: number; y: number }[][] = [];
-      let currentIndex = 0;
-      for (let i = 0; i < numCables; i++) {
-        const currentCapacity = baseCount + (i < remainder ? 1 : 0);
-        res.push(sequence.slice(currentIndex, currentIndex + currentCapacity));
-        currentIndex += currentCapacity;
-      }
-      return res;
-    },
-    [cols, rows, routingPriority, routingStart],
-  );
+  const routesFor = (capacity: number) =>
+    planRoutes({ cols, rows, priority: routingPriority, start: routingStart, capacity });
 
   const autoChunks = useMemo(
-    () => generateChunksForCapacity(maxCapacity),
-    [generateChunksForCapacity, maxCapacity],
+    () =>
+      planRoutes({
+        cols,
+        rows,
+        priority: routingPriority,
+        start: routingStart,
+        capacity: maxCapacity,
+      }),
+    [cols, rows, routingPriority, routingStart, maxCapacity],
   );
 
   const activeChunks =
@@ -281,7 +225,7 @@ export default function RoutingDrawings({
             <label className="block text-[9px] opacity-50 uppercase mb-1">Priority</label>
             <select
               value={routingPriority}
-              onChange={(e) => setRoutingPriority(e.target.value as 'vertical' | 'horizontal')}
+              onChange={(e) => setRoutingPriority(e.target.value as RoutingPriority)}
               className="bg-[#1A1A1A] border border-[#444] rounded-sm px-3 py-2 text-[10px] font-mono text-white focus:border-[#CCFF00] focus:outline-none appearance-none h-[34px]"
             >
               <option value="vertical">Vertical Snake</option>
@@ -293,13 +237,14 @@ export default function RoutingDrawings({
             <label className="block text-[9px] opacity-50 uppercase mb-1">Starting Corner</label>
             <select
               value={routingStart}
-              onChange={(e) => setRoutingStart(e.target.value as Props['routingStart'])}
+              onChange={(e) => setRoutingStart(e.target.value as StartCorner)}
               className="bg-[#1A1A1A] border border-[#444] rounded-sm px-3 py-2 text-[10px] font-mono text-white focus:border-[#CCFF00] focus:outline-none appearance-none h-[34px]"
             >
-              <option value="bottom-left">Bottom-Left</option>
-              <option value="bottom-right">Bottom-Right</option>
-              <option value="top-left">Top-Left</option>
-              <option value="top-right">Top-Right</option>
+              {START_CORNERS.map((corner) => (
+                <option key={corner} value={corner}>
+                  {cornerLabel(corner)}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -309,8 +254,8 @@ export default function RoutingDrawings({
               <div className="flex gap-2">
                 <button
                   onClick={() => {
-                    setManualDataRoutes(generateChunksForCapacity(dataMaxCapacity));
-                    setManualPowerRoutes(generateChunksForCapacity(powerMaxCapacity));
+                    setManualDataRoutes(routesFor(dataMaxCapacity));
+                    setManualPowerRoutes(routesFor(powerMaxCapacity));
                   }}
                   className="bg-[#10b981] text-black hover:bg-[#34d399] border border-[#059669] rounded-sm px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors h-[34px]"
                   title="Generate optimal serpentine route for both Data and Power"
@@ -439,7 +384,7 @@ export default function RoutingDrawings({
               {/* Connections */}
               {activeChunks.map((route, i) => {
                 const isInvalid = route.length > maxCapacity;
-                const color = isInvalid ? '#ef4444' : colors[i % colors.length];
+                const color = isInvalid ? OVER_CAPACITY_COLOR : colors[i % colors.length];
                 const markerId = isInvalid
                   ? 'url(#arrow-error)'
                   : `url(#arrow-${i % colors.length})`;
