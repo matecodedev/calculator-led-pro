@@ -6,14 +6,13 @@ export default function Library() {
   const [search, setSearch] = useState('');
 
   const filtered = cabinets.filter(
-    c => 
-      c.brand.toLowerCase().includes(search.toLowerCase()) || 
-      c.model.toLowerCase().includes(search.toLowerCase())
+    (c) =>
+      c.brand.toLowerCase().includes(search.toLowerCase()) ||
+      c.model.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
     <div className="p-6 animate-in fade-in duration-300">
-      
       <div className="mb-6 relative">
         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
           <Search className="h-4 w-4 text-neutral-500" />
@@ -27,7 +26,9 @@ export default function Library() {
         />
       </div>
 
-      <h2 className="text-xs font-bold tracking-widest uppercase mb-4 text-white">Cabinet Specification Library</h2>
+      <h2 className="text-xs font-bold tracking-widest uppercase mb-4 text-white">
+        Cabinet Specification Library
+      </h2>
 
       <div className="overflow-x-auto border border-[#333]">
         <table className="w-full text-left text-xs font-mono min-w-[600px]">
@@ -51,15 +52,19 @@ export default function Library() {
                   </div>
                 </td>
                 <td className="p-3 border-r border-[#333] opacity-80">{cab.brand}</td>
-                <td className="p-3 border-r border-[#333]">{cab.resX}x{cab.resY}</td>
-                <td className="p-3 border-r border-[#333]">{cab.width}x{cab.height}</td>
+                <td className="p-3 border-r border-[#333]">
+                  {cab.resX}x{cab.resY}
+                </td>
+                <td className="p-3 border-r border-[#333]">
+                  {cab.width}x{cab.height}
+                </td>
                 <td className="p-3 border-r border-[#333]">{cab.maxPower}W</td>
                 <td className="p-3">{cab.weight}kg</td>
               </tr>
             ))}
           </tbody>
         </table>
-        
+
         {filtered.length === 0 && (
           <div className="p-12 text-center text-neutral-500 bg-[#0A0A0A]">
             <Box className="w-8 h-8 mx-auto mb-3 opacity-20" />
@@ -67,7 +72,6 @@ export default function Library() {
           </div>
         )}
       </div>
-
     </div>
   );
 }

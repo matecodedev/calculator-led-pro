@@ -259,38 +259,46 @@ export const cabinets: Cabinet[] = [
     maxPower: 150,
     avgPower: 50,
     weight: 5.8,
-  }
+  },
 ];
 
 export const guides: Guide[] = [
   {
     id: 'g1',
     issue: 'Módulo o panel completamente negro (Falta de señal)',
-    cause: 'Fallo en la comunicación de red, cable RJ45 defectuoso o tarjeta receptora sin energía.',
-    solution: '1. Verifica los LEDs indicadores en la tarjeta receptora (Receiving Card). 2. Comprueba el cable CAT5/6 ingresando y saliendo del gabinete. 3. Intercambia el cable por uno nuevo. 4. Asegura que el cable de alimentación interno esté bien conectado a la fuente.',
+    cause:
+      'Fallo en la comunicación de red, cable RJ45 defectuoso o tarjeta receptora sin energía.',
+    solution:
+      '1. Verifica los LEDs indicadores en la tarjeta receptora (Receiving Card). 2. Comprueba el cable CAT5/6 ingresando y saliendo del gabinete. 3. Intercambia el cable por uno nuevo. 4. Asegura que el cable de alimentación interno esté bien conectado a la fuente.',
   },
   {
     id: 'g2',
     issue: 'Líneas brillantes horizontales o verticales',
     cause: 'Daño físico en los LEDs, máscara suelta, o fallo en el IC del módulo (driver).',
-    solution: '1. Reemplaza el módulo afectado (Hot swap si el modelo lo permite). 2. Limpia los pines de conexión del módulo a la tarjeta HUB (o tarjeta plana). 3. Verifica si hay pines doblados en la conexión.',
+    solution:
+      '1. Reemplaza el módulo afectado (Hot swap si el modelo lo permite). 2. Limpia los pines de conexión del módulo a la tarjeta HUB (o tarjeta plana). 3. Verifica si hay pines doblados en la conexión.',
   },
   {
     id: 'g3',
     issue: 'Colores desfasados o extraños (Efecto Mosaico)',
     cause: 'Archivo de calibración o configuración RCFG incorrecto en ese panel específico.',
-    solution: '1. Usa el software (ej. NovaLCT) para reenviar la configuración a la tarjeta receptora (Send Receive Card Param). 2. Asegúrate de que el firmware y el lote de calibración coincidan con el resto de la pantalla.',
+    solution:
+      '1. Usa el software (ej. NovaLCT) para reenviar la configuración a la tarjeta receptora (Send Receive Card Param). 2. Asegúrate de que el firmware y el lote de calibración coincidan con el resto de la pantalla.',
   },
   {
     id: 'g4',
     issue: 'Parpadeo (Flickering) en una sección de la estructura',
-    cause: 'Ruido eléctrico, mala puesta a tierra (grounding), o límite superado en un cable de red (> 650,000 píxeles).',
-    solution: '1. Asegura una buena puesta a tierra en la estructura rígida (Truss/Scaffolding). 2. Comprueba que no has superado la capacidad máxima de píxeles para ese puerto del procesador de video. 3. Reduce la frecuencia de refresco temporalmente para diagnosticar.',
+    cause:
+      'Ruido eléctrico, mala puesta a tierra (grounding), o límite superado en un cable de red (> 650,000 píxeles).',
+    solution:
+      '1. Asegura una buena puesta a tierra en la estructura rígida (Truss/Scaffolding). 2. Comprueba que no has superado la capacidad máxima de píxeles para ese puerto del procesador de video. 3. Reduce la frecuencia de refresco temporalmente para diagnosticar.',
   },
   {
     id: 'g5',
     issue: 'Panel no enciende (Ni video, ni LEDs indicadores atrá)',
-    cause: 'La fuente de alimentación interna (Power Supply) del gabinete no recibe energía o está quemada.',
-    solution: '1. Mide la entrada con un multímetro (Tensión entre Fase y Neutro). 2. Verifica los fusibles del Main Power o distribuidor de corriente. 3. Reemplaza la fuente de alimentación interna.',
-  }
+    cause:
+      'La fuente de alimentación interna (Power Supply) del gabinete no recibe energía o está quemada.',
+    solution:
+      '1. Mide la entrada con un multímetro (Tensión entre Fase y Neutro). 2. Verifica los fusibles del Main Power o distribuidor de corriente. 3. Reemplaza la fuente de alimentación interna.',
+  },
 ];

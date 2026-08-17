@@ -7,25 +7,28 @@ export default function Guides() {
 
   return (
     <div className="p-6 animate-in fade-in duration-300">
-      <h2 className="text-xs font-bold tracking-widest uppercase mb-6 text-blue-400">Quick Field Guide & Troubleshooting</h2>
-      
+      <h2 className="text-xs font-bold tracking-widest uppercase mb-6 text-blue-400">
+        Quick Field Guide & Troubleshooting
+      </h2>
+
       <div className="p-3 bg-[#111] border-l-2 border-[#FF4444] mb-6 flex items-start space-x-3">
         <span className="text-[#FF4444] font-bold mt-0.5">!</span>
         <div className="text-[11px]">
           <div className="font-bold uppercase text-[#FF4444]">Field Warning</div>
           <div className="opacity-80 text-[#E0E0E0] mt-1 pr-2">
-            If you cannot resolve the issue by power-cycling the panel or resending the RCFG calibration file, 
-            always verify processor output ports and physical CAT connections before opening cabinet hardware.
+            If you cannot resolve the issue by power-cycling the panel or resending the RCFG
+            calibration file, always verify processor output ports and physical CAT connections
+            before opening cabinet hardware.
           </div>
         </div>
       </div>
 
       <div className="space-y-4">
-        {guides.map(guide => {
+        {guides.map((guide) => {
           const isOpen = openId === guide.id;
           return (
-            <div 
-              key={guide.id} 
+            <div
+              key={guide.id}
               className={`bg-[#161616] border transition-colors ${isOpen ? 'border-[#444]' : 'border-[#333]'}`}
             >
               <button
@@ -34,22 +37,32 @@ export default function Guides() {
               >
                 <div className="flex items-center gap-3 pr-4">
                   <span className="text-blue-500 font-bold shrink-0">?</span>
-                  <h3 className={`text-xs font-bold uppercase transition-colors ${isOpen ? 'text-white' : 'text-[#E0E0E0]'}`}>
+                  <h3
+                    className={`text-xs font-bold uppercase transition-colors ${isOpen ? 'text-white' : 'text-[#E0E0E0]'}`}
+                  >
                     {guide.issue}
                   </h3>
                 </div>
-                <ChevronDown className={`w-4 h-4 text-neutral-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown
+                  className={`w-4 h-4 text-neutral-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                />
               </button>
-              
+
               {isOpen && (
                 <div className="px-4 pb-4 pt-1 animate-in slide-in-from-top-1 duration-200">
                   <div className="pl-6 space-y-4 border-l border-[#333] ml-1.5 pt-2">
                     <div>
-                      <h4 className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5">Probable Cause</h4>
-                      <p className="text-[11px] text-[#E0E0E0] font-mono leading-relaxed">{guide.cause}</p>
+                      <h4 className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5">
+                        Probable Cause
+                      </h4>
+                      <p className="text-[11px] text-[#E0E0E0] font-mono leading-relaxed">
+                        {guide.cause}
+                      </p>
                     </div>
                     <div>
-                      <h4 className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5">Action Plan</h4>
+                      <h4 className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5">
+                        Action Plan
+                      </h4>
                       <p className="text-[11px] text-[#CCFF00] font-mono leading-relaxed whitespace-pre-line">
                         {guide.solution}
                       </p>
@@ -61,7 +74,6 @@ export default function Guides() {
           );
         })}
       </div>
-
     </div>
   );
 }

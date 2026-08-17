@@ -1,18 +1,18 @@
-import React, { useCallback, useMemo } from "react";
-import { Route, Zap, Network } from "lucide-react";
+import React, { useCallback, useMemo } from 'react';
+import { Route, Zap, Network } from 'lucide-react';
 
 const DATA_COLORS = [
-  "#CCFF00",
-  "#06b6d4",
-  "#10b981",
-  "#f59e0b",
-  "#f97316",
-  "#3b82f6",
-  "#8b5cf6",
-  "#d946ef",
-  "#ec4899",
+  '#CCFF00',
+  '#06b6d4',
+  '#10b981',
+  '#f59e0b',
+  '#f97316',
+  '#3b82f6',
+  '#8b5cf6',
+  '#d946ef',
+  '#ec4899',
 ];
-const POWER_COLORS = ["#FF4444", "#f97316", "#f59e0b", "#eab308", "#dc2626"];
+const POWER_COLORS = ['#FF4444', '#f97316', '#f59e0b', '#eab308', '#dc2626'];
 
 interface Props {
   cols: number;
@@ -21,24 +21,18 @@ interface Props {
   cabinetHeight: number;
   dataMaxCapacity: number;
   powerMaxCapacity: number;
-  routingType: "data" | "power";
-  setRoutingType: (t: "data" | "power") => void;
-  routingPriority: "vertical" | "horizontal";
-  setRoutingPriority: (t: "vertical" | "horizontal") => void;
-  routingStart: "top-left" | "top-right" | "bottom-left" | "bottom-right";
-  setRoutingStart: (
-    t: "top-left" | "top-right" | "bottom-left" | "bottom-right",
-  ) => void;
-  routingMode: "auto" | "manual";
-  setRoutingMode: (m: "auto" | "manual") => void;
+  routingType: 'data' | 'power';
+  setRoutingType: (t: 'data' | 'power') => void;
+  routingPriority: 'vertical' | 'horizontal';
+  setRoutingPriority: (t: 'vertical' | 'horizontal') => void;
+  routingStart: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  setRoutingStart: (t: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right') => void;
+  routingMode: 'auto' | 'manual';
+  setRoutingMode: (m: 'auto' | 'manual') => void;
   manualDataRoutes: { x: number; y: number }[][];
-  setManualDataRoutes: React.Dispatch<
-    React.SetStateAction<{ x: number; y: number }[][]>
-  >;
+  setManualDataRoutes: React.Dispatch<React.SetStateAction<{ x: number; y: number }[][]>>;
   manualPowerRoutes: { x: number; y: number }[][];
-  setManualPowerRoutes: React.Dispatch<
-    React.SetStateAction<{ x: number; y: number }[][]>
-  >;
+  setManualPowerRoutes: React.Dispatch<React.SetStateAction<{ x: number; y: number }[][]>>;
 }
 
 export default function RoutingDrawings({
@@ -61,83 +55,77 @@ export default function RoutingDrawings({
   manualPowerRoutes,
   setManualPowerRoutes,
 }: Props) {
-  const maxCapacity =
-    routingType === "data" ? dataMaxCapacity : powerMaxCapacity;
-  const colors = routingType === "data" ? DATA_COLORS : POWER_COLORS;
+  const maxCapacity = routingType === 'data' ? dataMaxCapacity : powerMaxCapacity;
+  const colors = routingType === 'data' ? DATA_COLORS : POWER_COLORS;
 
-  const generateChunksForCapacity = useCallback((capacity: number) => {
-    const sequence: { x: number; y: number }[] = [];
+  const generateChunksForCapacity = useCallback(
+    (capacity: number) => {
+      const sequence: { x: number; y: number }[] = [];
 
-    if (routingPriority === "vertical") {
-      const startX = routingStart.includes("right") ? cols - 1 : 0;
-      const startY = routingStart.includes("bottom") ? rows - 1 : 0;
-      const stepX = routingStart.includes("right") ? -1 : 1;
-
-      for (let c = 0; c < cols; c++) {
-        const x = startX + c * stepX;
-        const isEvenCol = c % 2 === 0;
-        const currentStartY = isEvenCol
-          ? startY
-          : routingStart.includes("bottom")
-            ? 0
-            : rows - 1;
-        const stepY = isEvenCol
-          ? routingStart.includes("bottom")
-            ? -1
-            : 1
-          : routingStart.includes("bottom")
-            ? 1
-            : -1;
-
-        for (let r = 0; r < rows; r++) {
-          const y = currentStartY + r * stepY;
-          sequence.push({ x, y });
-        }
-      }
-    } else {
-      const startX = routingStart.includes("right") ? cols - 1 : 0;
-      const startY = routingStart.includes("bottom") ? rows - 1 : 0;
-      const stepY = routingStart.includes("bottom") ? -1 : 1;
-
-      for (let r = 0; r < rows; r++) {
-        const y = startY + r * stepY;
-        const isEvenRow = r % 2 === 0;
-        const currentStartX = isEvenRow
-          ? startX
-          : routingStart.includes("right")
-            ? 0
-            : cols - 1;
-        const stepX = isEvenRow
-          ? routingStart.includes("right")
-            ? -1
-            : 1
-          : routingStart.includes("right")
-            ? 1
-            : -1;
+      if (routingPriority === 'vertical') {
+        const startX = routingStart.includes('right') ? cols - 1 : 0;
+        const startY = routingStart.includes('bottom') ? rows - 1 : 0;
+        const stepX = routingStart.includes('right') ? -1 : 1;
 
         for (let c = 0; c < cols; c++) {
-          const x = currentStartX + c * stepX;
-          sequence.push({ x, y });
+          const x = startX + c * stepX;
+          const isEvenCol = c % 2 === 0;
+          const currentStartY = isEvenCol ? startY : routingStart.includes('bottom') ? 0 : rows - 1;
+          const stepY = isEvenCol
+            ? routingStart.includes('bottom')
+              ? -1
+              : 1
+            : routingStart.includes('bottom')
+              ? 1
+              : -1;
+
+          for (let r = 0; r < rows; r++) {
+            const y = currentStartY + r * stepY;
+            sequence.push({ x, y });
+          }
+        }
+      } else {
+        const startX = routingStart.includes('right') ? cols - 1 : 0;
+        const startY = routingStart.includes('bottom') ? rows - 1 : 0;
+        const stepY = routingStart.includes('bottom') ? -1 : 1;
+
+        for (let r = 0; r < rows; r++) {
+          const y = startY + r * stepY;
+          const isEvenRow = r % 2 === 0;
+          const currentStartX = isEvenRow ? startX : routingStart.includes('right') ? 0 : cols - 1;
+          const stepX = isEvenRow
+            ? routingStart.includes('right')
+              ? -1
+              : 1
+            : routingStart.includes('right')
+              ? 1
+              : -1;
+
+          for (let c = 0; c < cols; c++) {
+            const x = currentStartX + c * stepX;
+            sequence.push({ x, y });
+          }
         }
       }
-    }
 
-    const totalModules = sequence.length;
-    if (totalModules === 0) return [];
+      const totalModules = sequence.length;
+      if (totalModules === 0) return [];
 
-    const numCables = Math.ceil(totalModules / capacity);
-    const baseCount = Math.floor(totalModules / numCables);
-    const remainder = totalModules % numCables;
+      const numCables = Math.ceil(totalModules / capacity);
+      const baseCount = Math.floor(totalModules / numCables);
+      const remainder = totalModules % numCables;
 
-    const res: { x: number; y: number }[][] = [];
-    let currentIndex = 0;
-    for (let i = 0; i < numCables; i++) {
-      const currentCapacity = baseCount + (i < remainder ? 1 : 0);
-      res.push(sequence.slice(currentIndex, currentIndex + currentCapacity));
-      currentIndex += currentCapacity;
-    }
-    return res;
-  }, [cols, rows, routingPriority, routingStart]);
+      const res: { x: number; y: number }[][] = [];
+      let currentIndex = 0;
+      for (let i = 0; i < numCables; i++) {
+        const currentCapacity = baseCount + (i < remainder ? 1 : 0);
+        res.push(sequence.slice(currentIndex, currentIndex + currentCapacity));
+        currentIndex += currentCapacity;
+      }
+      return res;
+    },
+    [cols, rows, routingPriority, routingStart],
+  );
 
   const autoChunks = useMemo(
     () => generateChunksForCapacity(maxCapacity),
@@ -145,17 +133,14 @@ export default function RoutingDrawings({
   );
 
   const activeChunks =
-    routingMode === "auto"
+    routingMode === 'auto'
       ? autoChunks
-      : (routingType === "data" ? manualDataRoutes : manualPowerRoutes).filter(
-          (c) => c.length > 0,
-        );
+      : (routingType === 'data' ? manualDataRoutes : manualPowerRoutes).filter((c) => c.length > 0);
 
   const handleCellClick = (c: number, r: number) => {
-    if (routingMode !== "manual") return;
+    if (routingMode !== 'manual') return;
 
-    const setManualRoutes =
-      routingType === "data" ? setManualDataRoutes : setManualPowerRoutes;
+    const setManualRoutes = routingType === 'data' ? setManualDataRoutes : setManualPowerRoutes;
 
     setManualRoutes((prev) => {
       const newRoutes = [...prev];
@@ -172,9 +157,7 @@ export default function RoutingDrawings({
         return newRoutes;
       }
 
-      const alreadyInUse = newRoutes.some((line) =>
-        line.some((p) => p.x === c && p.y === r),
-      );
+      const alreadyInUse = newRoutes.some((line) => line.some((p) => p.x === c && p.y === r));
       if (alreadyInUse) return prev;
 
       newRoutes[currentLineIndex] = [...currentLine, { x: c, y: r }];
@@ -183,8 +166,7 @@ export default function RoutingDrawings({
   };
 
   const undoManualLine = () => {
-    const setManualRoutes =
-      routingType === "data" ? setManualDataRoutes : setManualPowerRoutes;
+    const setManualRoutes = routingType === 'data' ? setManualDataRoutes : setManualPowerRoutes;
     setManualRoutes((prev) => {
       const newRoutes = [...prev];
       const currentLineIndex = newRoutes.length - 1;
@@ -201,21 +183,18 @@ export default function RoutingDrawings({
   };
 
   const startNewLine = () => {
-    const setManualRoutes =
-      routingType === "data" ? setManualDataRoutes : setManualPowerRoutes;
+    const setManualRoutes = routingType === 'data' ? setManualDataRoutes : setManualPowerRoutes;
     setManualRoutes((prev) => {
       const newRoutes = [...prev];
       const currentLineIndex = newRoutes.length - 1;
-      if (currentLineIndex >= 0 && newRoutes[currentLineIndex].length === 0)
-        return prev;
+      if (currentLineIndex >= 0 && newRoutes[currentLineIndex].length === 0) return prev;
       newRoutes.push([]);
       return newRoutes;
     });
   };
 
   const clearManual = () => {
-    const setManualRoutes =
-      routingType === "data" ? setManualDataRoutes : setManualPowerRoutes;
+    const setManualRoutes = routingType === 'data' ? setManualDataRoutes : setManualPowerRoutes;
     setManualRoutes([[]]);
   };
 
@@ -247,26 +226,24 @@ export default function RoutingDrawings({
 
         <div className="flex flex-wrap gap-3 w-full sm:w-auto">
           <div>
-            <label className="block text-[9px] opacity-50 uppercase mb-1">
-              Cable Layer
-            </label>
+            <label className="block text-[9px] opacity-50 uppercase mb-1">Cable Layer</label>
             <div className="flex bg-[#1A1A1A] border border-[#444] rounded-sm p-1">
               <button
-                onClick={() => setRoutingType("data")}
+                onClick={() => setRoutingType('data')}
                 className={`flex items-center gap-2 px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider rounded-sm transition-colors ${
-                  routingType === "data"
-                    ? "bg-[#CCFF00] text-black"
-                    : "text-neutral-500 hover:text-white"
+                  routingType === 'data'
+                    ? 'bg-[#CCFF00] text-black'
+                    : 'text-neutral-500 hover:text-white'
                 }`}
               >
                 <Network className="w-3 h-3" /> Data
               </button>
               <button
-                onClick={() => setRoutingType("power")}
+                onClick={() => setRoutingType('power')}
                 className={`flex items-center gap-2 px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider rounded-sm transition-colors ${
-                  routingType === "power"
-                    ? "bg-[#FF4444] text-white"
-                    : "text-neutral-500 hover:text-white"
+                  routingType === 'power'
+                    ? 'bg-[#FF4444] text-white'
+                    : 'text-neutral-500 hover:text-white'
                 }`}
               >
                 <Zap className="w-3 h-3" /> Power
@@ -275,26 +252,24 @@ export default function RoutingDrawings({
           </div>
 
           <div>
-            <label className="block text-[9px] opacity-50 uppercase mb-1">
-              Mode
-            </label>
+            <label className="block text-[9px] opacity-50 uppercase mb-1">Mode</label>
             <div className="flex bg-[#1A1A1A] border border-[#444] rounded-sm p-1">
               <button
-                onClick={() => setRoutingMode("auto")}
+                onClick={() => setRoutingMode('auto')}
                 className={`flex items-center gap-2 px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider rounded-sm transition-colors ${
-                  routingMode === "auto"
-                    ? "bg-[#333] text-white"
-                    : "text-neutral-500 hover:text-white"
+                  routingMode === 'auto'
+                    ? 'bg-[#333] text-white'
+                    : 'text-neutral-500 hover:text-white'
                 }`}
               >
                 Auto
               </button>
               <button
-                onClick={() => setRoutingMode("manual")}
+                onClick={() => setRoutingMode('manual')}
                 className={`flex items-center gap-2 px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider rounded-sm transition-colors ${
-                  routingMode === "manual"
-                    ? "bg-[#333] text-white"
-                    : "text-neutral-500 hover:text-white"
+                  routingMode === 'manual'
+                    ? 'bg-[#333] text-white'
+                    : 'text-neutral-500 hover:text-white'
                 }`}
               >
                 Manual
@@ -303,14 +278,10 @@ export default function RoutingDrawings({
           </div>
 
           <div>
-            <label className="block text-[9px] opacity-50 uppercase mb-1">
-              Priority
-            </label>
+            <label className="block text-[9px] opacity-50 uppercase mb-1">Priority</label>
             <select
               value={routingPriority}
-              onChange={(e) =>
-                setRoutingPriority(e.target.value as "vertical" | "horizontal")
-              }
+              onChange={(e) => setRoutingPriority(e.target.value as 'vertical' | 'horizontal')}
               className="bg-[#1A1A1A] border border-[#444] rounded-sm px-3 py-2 text-[10px] font-mono text-white focus:border-[#CCFF00] focus:outline-none appearance-none h-[34px]"
             >
               <option value="vertical">Vertical Snake</option>
@@ -319,12 +290,10 @@ export default function RoutingDrawings({
           </div>
 
           <div>
-            <label className="block text-[9px] opacity-50 uppercase mb-1">
-              Starting Corner
-            </label>
+            <label className="block text-[9px] opacity-50 uppercase mb-1">Starting Corner</label>
             <select
               value={routingStart}
-              onChange={(e) => setRoutingStart(e.target.value as Props["routingStart"])}
+              onChange={(e) => setRoutingStart(e.target.value as Props['routingStart'])}
               className="bg-[#1A1A1A] border border-[#444] rounded-sm px-3 py-2 text-[10px] font-mono text-white focus:border-[#CCFF00] focus:outline-none appearance-none h-[34px]"
             >
               <option value="bottom-left">Bottom-Left</option>
@@ -334,20 +303,14 @@ export default function RoutingDrawings({
             </select>
           </div>
 
-          {routingMode === "manual" && (
+          {routingMode === 'manual' && (
             <div>
-              <label className="block text-[9px] opacity-50 uppercase mb-1">
-                Manual Controls
-              </label>
+              <label className="block text-[9px] opacity-50 uppercase mb-1">Manual Controls</label>
               <div className="flex gap-2">
                 <button
                   onClick={() => {
-                    setManualDataRoutes(
-                      generateChunksForCapacity(dataMaxCapacity),
-                    );
-                    setManualPowerRoutes(
-                      generateChunksForCapacity(powerMaxCapacity),
-                    );
+                    setManualDataRoutes(generateChunksForCapacity(dataMaxCapacity));
+                    setManualPowerRoutes(generateChunksForCapacity(powerMaxCapacity));
                   }}
                   className="bg-[#10b981] text-black hover:bg-[#34d399] border border-[#059669] rounded-sm px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors h-[34px]"
                   title="Generate optimal serpentine route for both Data and Power"
@@ -378,15 +341,15 @@ export default function RoutingDrawings({
         </div>
       </div>
 
-      {(activeChunks.length > 0 || routingMode === "manual") && (
+      {(activeChunks.length > 0 || routingMode === 'manual') && (
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center gap-4 sm:gap-6 bg-[#161616] border border-[#333] p-3 text-[10px] uppercase font-mono">
             <div className="font-bold text-[#CCFF00]">
               Legend (
-              {(routingType === "data"
-                ? manualDataRoutes
-                : manualPowerRoutes
-              ).reduce((a, b) => a + b.length, 0)}
+              {(routingType === 'data' ? manualDataRoutes : manualPowerRoutes).reduce(
+                (a, b) => a + b.length,
+                0,
+              )}
               /{cols * rows})
             </div>
             <div className="flex items-center gap-2">
@@ -404,9 +367,7 @@ export default function RoutingDrawings({
               <span>Link (Max {maxCapacity} cab)</span>
             </div>
             <div className="flex items-center gap-4 sm:border-l sm:border-[#333] sm:pl-4 mt-2 sm:mt-0">
-              <span className="opacity-50">
-                Total Cables: {activeChunks.length}
-              </span>
+              <span className="opacity-50">Total Cables: {activeChunks.length}</span>
               <span className="opacity-50">Total Cabs: {cols * rows}</span>
             </div>
           </div>
@@ -419,9 +380,9 @@ export default function RoutingDrawings({
               preserveAspectRatio="xMidYMid meet"
               className="flex-shrink-0"
               style={{
-                maxHeight: "70vh",
-                minHeight: "300px",
-                maxWidth: "100%",
+                maxHeight: '70vh',
+                minHeight: '300px',
+                maxWidth: '100%',
               }}
             >
               <defs>
@@ -467,9 +428,9 @@ export default function RoutingDrawings({
                     strokeWidth="1"
                     onClick={() => handleCellClick(c, r)}
                     className={
-                      routingMode === "manual"
-                        ? "cursor-pointer hover:fill-[#222] transition-colors"
-                        : ""
+                      routingMode === 'manual'
+                        ? 'cursor-pointer hover:fill-[#222] transition-colors'
+                        : ''
                     }
                   />
                 )),
@@ -478,9 +439,9 @@ export default function RoutingDrawings({
               {/* Connections */}
               {activeChunks.map((route, i) => {
                 const isInvalid = route.length > maxCapacity;
-                const color = isInvalid ? "#ef4444" : colors[i % colors.length];
+                const color = isInvalid ? '#ef4444' : colors[i % colors.length];
                 const markerId = isInvalid
-                  ? "url(#arrow-error)"
+                  ? 'url(#arrow-error)'
                   : `url(#arrow-${i % colors.length})`;
 
                 return (
@@ -491,10 +452,7 @@ export default function RoutingDrawings({
                         transform={`translate(${route[0].x * cellWidth + cellWidth / 2}, ${route[0].y * cellHeight + cellHeight / 2})`}
                       >
                         <circle
-                          r={Math.max(
-                            4,
-                            Math.min(cellWidth, cellHeight) * 0.25,
-                          )}
+                          r={Math.max(4, Math.min(cellWidth, cellHeight) * 0.25)}
                           fill="#1A1A1A"
                           stroke={color}
                           strokeWidth="2"
@@ -535,10 +493,7 @@ export default function RoutingDrawings({
                           x2={line.x2}
                           y2={line.y2}
                           stroke={color}
-                          strokeWidth={Math.max(
-                            2,
-                            Math.min(cellWidth, cellHeight) * 0.05,
-                          )}
+                          strokeWidth={Math.max(2, Math.min(cellWidth, cellHeight) * 0.05)}
                           strokeLinecap="round"
                           markerEnd={markerId}
                         />
