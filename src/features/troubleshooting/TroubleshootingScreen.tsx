@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { guides } from '../domain/catalog';
+import { guides } from '../../domain/catalog';
 import { ChevronDown } from 'lucide-react';
 
-export default function Guides() {
+export default function TroubleshootingScreen() {
   const [openId, setOpenId] = useState<string | null>(guides[0].id);
 
   return (

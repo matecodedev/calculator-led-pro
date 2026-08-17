@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Calculator, Library as LibraryIcon, Wrench, Heart } from 'lucide-react';
 import type { TabState } from './types';
-import CalculatorView from './components/Calculator';
-import LibraryView from './components/Library';
-import GuidesView from './components/Guides';
+import CalculatorScreen from './features/calculator/CalculatorScreen';
+import LibraryScreen from './features/library/LibraryScreen';
+import TroubleshootingScreen from './features/troubleshooting/TroubleshootingScreen';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabState>('calculator');
@@ -79,9 +79,9 @@ export default function App() {
 
         {/* Main Content Area */}
         <main className="flex-1 overflow-y-auto bg-[#0F0F0F] relative">
-          {activeTab === 'calculator' && <CalculatorView />}
-          {activeTab === 'library' && <LibraryView />}
-          {activeTab === 'guides' && <GuidesView />}
+          {activeTab === 'calculator' && <CalculatorScreen />}
+          {activeTab === 'library' && <LibraryScreen />}
+          {activeTab === 'guides' && <TroubleshootingScreen />}
           {/* Spacer to handle the safe area bottom spacing for mobile nav */}
           <div className="h-20 sm:h-0" />
         </main>

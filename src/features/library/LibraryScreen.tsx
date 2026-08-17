@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { cabinets } from '../domain/catalog';
+import { cabinets } from '../../domain/catalog';
 import { Box, Search } from 'lucide-react';
 
-export default function Library() {
+export default function LibraryScreen() {
   const [search, setSearch] = useState('');
 
   const filtered = cabinets.filter(
