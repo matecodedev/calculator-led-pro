@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { cabinets } from '../data';
-import { Box, Search, ExternalLink } from 'lucide-react';
+import { Box, Search } from 'lucide-react';
 
 export default function Library() {
   const [search, setSearch] = useState('');

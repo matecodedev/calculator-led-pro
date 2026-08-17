@@ -1,4 +1,4 @@
-import { Cabinet, Guide, Processor } from './types';
+import type { Cabinet, Guide, Processor } from './types';
 
 export const processors: Processor[] = [
   { id: 'p1', brand: 'NovaStar', model: 'VX1000', dataPorts: 10, maxPixelsPerPort: 650000 },

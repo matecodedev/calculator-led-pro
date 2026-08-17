@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
 import { Route, Zap, Network } from "lucide-react";
 
 const DATA_COLORS = [
@@ -65,7 +65,7 @@ export default function RoutingDrawings({
     routingType === "data" ? dataMaxCapacity : powerMaxCapacity;
   const colors = routingType === "data" ? DATA_COLORS : POWER_COLORS;
 
-  const generateChunksForCapacity = (capacity: number) => {
+  const generateChunksForCapacity = useCallback((capacity: number) => {
     const sequence: { x: number; y: number }[] = [];
 
     if (routingPriority === "vertical") {
@@ -137,11 +137,12 @@ export default function RoutingDrawings({
       currentIndex += currentCapacity;
     }
     return res;
-  };
+  }, [cols, rows, routingPriority, routingStart]);
 
-  const autoChunks = useMemo(() => {
-    return generateChunksForCapacity(maxCapacity);
-  }, [cols, rows, routingPriority, routingStart, maxCapacity]);
+  const autoChunks = useMemo(
+    () => generateChunksForCapacity(maxCapacity),
+    [generateChunksForCapacity, maxCapacity],
+  );
 
   const activeChunks =
     routingMode === "auto"
@@ -323,7 +324,7 @@ export default function RoutingDrawings({
             </label>
             <select
               value={routingStart}
-              onChange={(e) => setRoutingStart(e.target.value as any)}
+              onChange={(e) => setRoutingStart(e.target.value as Props["routingStart"])}
               className="bg-[#1A1A1A] border border-[#444] rounded-sm px-3 py-2 text-[10px] font-mono text-white focus:border-[#CCFF00] focus:outline-none appearance-none h-[34px]"
             >
               <option value="bottom-left">Bottom-Left</option>

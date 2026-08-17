@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { guides } from '../data';
-import { Wrench, AlertTriangle, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 
 export default function Guides() {
   const [openId, setOpenId] = useState<string | null>(guides[0].id);

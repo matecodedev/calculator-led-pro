@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { cabinets, processors } from '../data';
 import { Settings2, Cpu, Download } from 'lucide-react';
-import { Cabinet, Processor } from '../types';
+import type { Cabinet, Processor } from '../types';
 
 import RoutingDrawings from './RoutingDrawings';
 
@@ -24,10 +24,12 @@ export default function Calculator() {
     id: 'custom_p', brand: 'Custom', model: 'Processor', dataPorts: 4, maxPixelsPerPort: 650000
   });
 
-  const [voltage, setVoltage] = useState<number>(220);
+  const voltage = 220; // Line voltage (V). Fixed until a mains-voltage selector exists.
   const [pduCapacityAmps, setPduCapacityAmps] = useState<number>(96); // Default 32A Triphase
   const [breakerAmps, setBreakerAmps] = useState<number>(16);
   const [cableLoopAmps, setCableLoopAmps] = useState<number>(16);
+
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const [eventName, setEventName] = useState<string>('');
   const [screenName, setScreenName] = useState<string>('');
@@ -90,12 +92,15 @@ export default function Calculator() {
       cabinetsPerPowerCable,
       effectiveAmpsPerLine,
     };
-  }, [calcMode, activeCabinet, activeProcessor, targetWidth, targetHeight, cols, rows, voltage, pduCapacityAmps, breakerAmps, cableLoopAmps]);
+  }, [calcMode, activeCabinet, activeProcessor, targetWidth, targetHeight, cols, rows, voltage, breakerAmps, cableLoopAmps]);
 
-  const exportToPDF = () => {
-    import('jspdf').then(({ default: jsPDF }) => {
-      import('jspdf-autotable').then(({ default: autoTable }) => {
-        const doc = new jsPDF();
+  const exportToPDF = async () => {
+    try {
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+      ]);
+      const doc = new jsPDF();
         
         doc.setFontSize(18);
         doc.setTextColor(20, 20, 20);
@@ -168,18 +173,21 @@ export default function Calculator() {
           headStyles: { fillColor: [231, 76, 60] } // Red tone
         });
 
-        let finalY = (doc as any).lastAutoTable.finalY + 10;
-        if (results.maxAmps > pduCapacityAmps) {
-          doc.setTextColor(255, 0, 0);
-          doc.setFont(undefined, 'bold');
-          doc.text('WARNING: Total Peak Current exceeds Main PDU Capacity!', 14, finalY);
-          finalY += 10;
-        }
+      const lastTable = (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable;
+      if (results.maxAmps > pduCapacityAmps) {
+        doc.setTextColor(255, 0, 0);
+        doc.setFont('helvetica', 'bold');
+        doc.text(
+          'WARNING: Total Peak Current exceeds Main PDU Capacity!',
+          14,
+          (lastTable?.finalY ?? yPos) + 10,
+        );
+      }
 
         const drawSchematic = (title: string, chunks: {x: number, y: number}[][], colors: string[], startY: number) => {
           doc.setFontSize(14);
           doc.setTextColor(20, 20, 20);
-          doc.setFont(undefined, 'normal');
+          doc.setFont('helvetica', 'normal');
           doc.text(title, 14, startY);
           
           const availableWidth = 180;
@@ -302,14 +310,22 @@ export default function Calculator() {
         const dataChunksToDraw = routingMode === 'auto' ? generateAutoChunks(results.cabinetsPerDataPort) : manualDataRoutes;
         const powerChunksToDraw = routingMode === 'auto' ? generateAutoChunks(results.cabinetsPerPowerCable) : manualPowerRoutes;
 
-        doc.addPage();
-        let currentY = 20;
-        currentY = drawSchematic(`Data Routing Schematic (${results.cabinetsPerDataPort} cab/line max)`, dataChunksToDraw, DATA_COLORS, currentY);
-        currentY = drawSchematic(`Power Routing Schematic (${results.cabinetsPerPowerCable} cab/line max)`, powerChunksToDraw, POWER_COLORS, currentY);
+      doc.addPage();
+      const dataSchematicEndY = drawSchematic(`Data Routing Schematic (${results.cabinetsPerDataPort} cab/line max)`, dataChunksToDraw, DATA_COLORS, 20);
+      drawSchematic(`Power Routing Schematic (${results.cabinetsPerPowerCable} cab/line max)`, powerChunksToDraw, POWER_COLORS, dataSchematicEndY);
 
-        doc.save(`led_screen_report_${Date.now()}.pdf`);
-      });
-    });
+      const slug = [eventName, screenName]
+        .filter(Boolean)
+        .join('-')
+        .replace(/[^a-zA-Z0-9-]+/g, '_');
+       
+      const stamp = new Date().toISOString().slice(0, 10);
+      doc.save(`led-report_${slug || 'screen'}_${stamp}.pdf`);
+      setExportError(null);
+    } catch (error) {
+      console.error('PDF export failed', error);
+      setExportError('The PDF report could not be generated. Please try again.');
+    }
   };
 
   const [routingType, setRoutingType] = useState<"data" | "power">("data");
@@ -324,10 +340,16 @@ export default function Calculator() {
   const [manualDataRoutes, setManualDataRoutes] = useState<{x:number, y:number}[][]>([[]]);
   const [manualPowerRoutes, setManualPowerRoutes] = useState<{x:number, y:number}[][]>([[]]);
   
-  useEffect(() => {
+  // Hand-drawn routes hold cell coordinates, so they are only valid for the grid
+  // they were drawn on. The grid comes from `results`, which in 'dimensions' mode
+  // also changes with the target size and the selected cabinet — not just cols/rows.
+  const routedGrid = `${results.cols}x${results.rows}`;
+  const [drawnOnGrid, setDrawnOnGrid] = useState(routedGrid);
+  if (drawnOnGrid !== routedGrid) {
+    setDrawnOnGrid(routedGrid);
     setManualDataRoutes([[]]);
     setManualPowerRoutes([[]]);
-  }, [cols, rows]);
+  }
 
   return (
     <div className="animate-in fade-in duration-300">
@@ -336,7 +358,7 @@ export default function Calculator() {
       <div className="p-4 bg-[#111] border-b border-[#333] flex justify-between items-center sticky top-0 z-10 hidden sm:flex">
         <h1 className="text-xs font-bold tracking-widest uppercase text-white">Active Configuration Project</h1>
         <button 
-          onClick={exportToPDF}
+          onClick={() => void exportToPDF()}
           className="flex items-center gap-2 bg-[#CCFF00] text-black px-4 py-2 text-[10px] font-bold uppercase tracking-wider rounded-sm hover:bg-[#aacc00] transition-colors shadow-lg"
         >
           <Download className="w-3.5 h-3.5" />
@@ -345,12 +367,20 @@ export default function Calculator() {
       </div>
       <div className="p-4 bg-[#111] border-b border-[#333] flex justify-between items-center sm:hidden">
         <button 
-          onClick={exportToPDF}
+          onClick={() => void exportToPDF()}
           className="flex-1 flex justify-center items-center gap-2 bg-[#CCFF00] text-black px-4 py-3 text-[10px] font-bold uppercase tracking-wider rounded-sm hover:bg-[#aacc00] transition-colors"
         >
           <Download className="w-4 h-4" />
           Download PDF Export
         </button>
+      </div>
+
+      <div role="alert" aria-live="polite">
+        {exportError && (
+          <p className="px-4 py-3 bg-[#2C1A17] border-b border-[#FF4444] text-[#FF9F91] text-xs">
+            {exportError}
+          </p>
+        )}
       </div>
 
       {/* Top Section */}
