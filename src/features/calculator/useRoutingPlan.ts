@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import type { ProjectCalculation } from '../../domain/calculate';
+import type { ProjectSnapshot } from '../../domain/project/snapshot';
 import type { CableLayer } from '../../domain/routing/palette';
 import {
   planRoutes,
@@ -18,13 +19,22 @@ export type RoutingMode = 'auto' | 'manual';
  * into the calculator only so the PDF export could read them. Now the state and
  * the routes it produces travel together as one object.
  */
-export function useRoutingPlan(results: ProjectCalculation | null) {
-  const [layer, setLayer] = useState<CableLayer>('data');
-  const [priority, setPriority] = useState<RoutingPriority>('vertical');
-  const [start, setStart] = useState<StartCorner>('bottom-left');
-  const [mode, setMode] = useState<RoutingMode>('auto');
-  const [manualData, setManualData] = useState<GridPosition[][]>([[]]);
-  const [manualPower, setManualPower] = useState<GridPosition[][]>([[]]);
+export function useRoutingPlan(
+  results: ProjectCalculation | null,
+  initial?: ProjectSnapshot | null,
+) {
+  const [layer, setLayer] = useState<CableLayer>(initial?.routing.layer ?? 'data');
+  const [priority, setPriority] = useState<RoutingPriority>(
+    initial?.routing.priority ?? 'vertical',
+  );
+  const [start, setStart] = useState<StartCorner>(initial?.routing.start ?? 'bottom-left');
+  const [mode, setMode] = useState<RoutingMode>(initial?.routing.mode ?? 'auto');
+  const [manualData, setManualData] = useState<GridPosition[][]>(
+    initial?.routing.manualData ?? [[]],
+  );
+  const [manualPower, setManualPower] = useState<GridPosition[][]>(
+    initial?.routing.manualPower ?? [[]],
+  );
 
   // Hand-drawn routes hold cell coordinates, so they only mean anything on the
   // grid they were drawn on. That grid comes from `results`, which in
@@ -67,6 +77,8 @@ export function useRoutingPlan(results: ProjectCalculation | null) {
     manualRoutesForActiveLayer: layer === 'data' ? manualData : manualPower,
     autoRoutesFor,
     routesFor,
+    /** This hook's share of the saved document. */
+    snapshotSlice: { layer, priority, start, mode, manualData, manualPower },
     /** Replaces both layers with the generated serpentine. */
     fillFromAuto: (dataCapacity: number, powerCapacity: number) => {
       setManualData(autoRoutesFor(dataCapacity));

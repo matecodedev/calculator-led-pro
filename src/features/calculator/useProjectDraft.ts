@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 
 import { calculateProject, validateProject, type ProjectInput } from '../../domain/calculate';
 import { cabinets, processors, type Cabinet, type Processor } from '../../domain/catalog';
+import type { ProjectSnapshot } from '../../domain/project/snapshot';
 
 /** Line voltage (V). Fixed until a mains-voltage selector exists. */
 export const LINE_VOLTAGE = 220;
@@ -38,27 +39,35 @@ const BLANK_PROCESSOR: Processor = {
  * show, without any of them being passed through a component that doesn't use
  * them.
  */
-export function useProjectDraft() {
-  const [eventName, setEventName] = useState('');
-  const [screenName, setScreenName] = useState('');
+export function useProjectDraft(initial?: ProjectSnapshot | null) {
+  const [eventName, setEventName] = useState(initial?.identity.eventName ?? '');
+  const [screenName, setScreenName] = useState(initial?.identity.screenName ?? '');
 
-  const [calcMode, setCalcMode] = useState<CalcMode>('dimensions');
-  const [targetWidthM, setTargetWidthM] = useState(4);
-  const [targetHeightM, setTargetHeightM] = useState(2.5);
-  const [cols, setCols] = useState(6);
-  const [rows, setRows] = useState(4);
+  const [calcMode, setCalcMode] = useState<CalcMode>(initial?.target.calcMode ?? 'dimensions');
+  const [targetWidthM, setTargetWidthM] = useState(initial?.target.targetWidthM ?? 4);
+  const [targetHeightM, setTargetHeightM] = useState(initial?.target.targetHeightM ?? 2.5);
+  const [cols, setCols] = useState(initial?.target.cols ?? 6);
+  const [rows, setRows] = useState(initial?.target.rows ?? 4);
 
-  const [selectedCabinetId, setSelectedCabinetId] = useState(cabinets[0].id);
-  const [isCustomCabinet, setIsCustomCabinet] = useState(false);
-  const [customCabinet, setCustomCabinet] = useState<Cabinet>(BLANK_CABINET);
+  const [selectedCabinetId, setSelectedCabinetId] = useState(
+    initial?.cabinet.selectedId ?? cabinets[0].id,
+  );
+  const [isCustomCabinet, setIsCustomCabinet] = useState(initial?.cabinet.isCustom ?? false);
+  const [customCabinet, setCustomCabinet] = useState<Cabinet>(
+    initial?.cabinet.custom ?? BLANK_CABINET,
+  );
 
-  const [selectedProcessorId, setSelectedProcessorId] = useState(processors[0].id);
-  const [isCustomProcessor, setIsCustomProcessor] = useState(false);
-  const [customProcessor, setCustomProcessor] = useState<Processor>(BLANK_PROCESSOR);
+  const [selectedProcessorId, setSelectedProcessorId] = useState(
+    initial?.processor.selectedId ?? processors[0].id,
+  );
+  const [isCustomProcessor, setIsCustomProcessor] = useState(initial?.processor.isCustom ?? false);
+  const [customProcessor, setCustomProcessor] = useState<Processor>(
+    initial?.processor.custom ?? BLANK_PROCESSOR,
+  );
 
-  const [pduCapacityAmps, setPduCapacityAmps] = useState(96); // Three-phase 32 A
-  const [breakerAmps, setBreakerAmps] = useState(16);
-  const [cableLoopAmps, setCableLoopAmps] = useState(16);
+  const [pduCapacityAmps, setPduCapacityAmps] = useState(initial?.supply.pduCapacityAmps ?? 96);
+  const [breakerAmps, setBreakerAmps] = useState(initial?.supply.breakerAmps ?? 16);
+  const [cableLoopAmps, setCableLoopAmps] = useState(initial?.supply.cableLoopAmps ?? 16);
 
   const cabinet = isCustomCabinet
     ? customCabinet
@@ -147,6 +156,22 @@ export function useProjectDraft() {
       setBreakerAmps,
       cableLoopAmps,
       setCableLoopAmps,
+    },
+    /** This hook's share of the saved document. */
+    snapshotSlice: {
+      identity: { eventName, screenName },
+      target: { calcMode, targetWidthM, targetHeightM, cols, rows },
+      cabinet: {
+        selectedId: isCustomCabinet ? 'custom' : selectedCabinetId,
+        isCustom: isCustomCabinet,
+        custom: customCabinet,
+      },
+      processor: {
+        selectedId: isCustomProcessor ? 'custom' : selectedProcessorId,
+        isCustom: isCustomProcessor,
+        custom: customProcessor,
+      },
+      supply: { pduCapacityAmps, breakerAmps, cableLoopAmps },
     },
     input,
     issues,
