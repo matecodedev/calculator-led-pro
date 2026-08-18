@@ -4,8 +4,12 @@ import { calculateProject, validateProject, type ProjectInput } from '../../doma
 import { cabinets, processors, type Cabinet, type Processor } from '../../domain/catalog';
 import type { ProjectSnapshot } from '../../domain/project/snapshot';
 
-/** Line voltage (V). Fixed until a mains-voltage selector exists. */
-export const LINE_VOLTAGE = 220;
+/**
+ * Default mains voltage (V). 220 matches the catalog's region and what the app
+ * assumed before this selector existed, so an existing plan keeps its numbers.
+ * A crew landing in North America must change it — every amperage depends on it.
+ */
+export const DEFAULT_LINE_VOLTAGE = 220;
 
 export type CalcMode = 'dimensions' | 'count';
 
@@ -65,6 +69,7 @@ export function useProjectDraft(initial?: ProjectSnapshot | null) {
     initial?.processor.custom ?? BLANK_PROCESSOR,
   );
 
+  const [voltage, setVoltage] = useState(initial?.supply.voltage ?? DEFAULT_LINE_VOLTAGE);
   const [pduCapacityAmps, setPduCapacityAmps] = useState(initial?.supply.pduCapacityAmps ?? 96);
   const [breakerAmps, setBreakerAmps] = useState(initial?.supply.breakerAmps ?? 16);
   const [cableLoopAmps, setCableLoopAmps] = useState(initial?.supply.cableLoopAmps ?? 16);
@@ -84,7 +89,7 @@ export function useProjectDraft(initial?: ProjectSnapshot | null) {
           : { mode: 'count', cols, rows },
       cabinet,
       processor,
-      voltage: LINE_VOLTAGE,
+      voltage,
       breakerAmps,
       cableLoopAmps,
     }),
@@ -96,6 +101,7 @@ export function useProjectDraft(initial?: ProjectSnapshot | null) {
       rows,
       cabinet,
       processor,
+      voltage,
       breakerAmps,
       cableLoopAmps,
     ],
@@ -149,7 +155,8 @@ export function useProjectDraft(initial?: ProjectSnapshot | null) {
       updateCustom: setCustomProcessor,
     },
     supply: {
-      voltage: LINE_VOLTAGE,
+      voltage,
+      setVoltage,
       pduCapacityAmps,
       setPduCapacityAmps,
       breakerAmps,
@@ -171,7 +178,7 @@ export function useProjectDraft(initial?: ProjectSnapshot | null) {
         isCustom: isCustomProcessor,
         custom: customProcessor,
       },
-      supply: { pduCapacityAmps, breakerAmps, cableLoopAmps },
+      supply: { voltage, pduCapacityAmps, breakerAmps, cableLoopAmps },
     },
     input,
     issues,

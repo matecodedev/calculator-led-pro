@@ -31,7 +31,7 @@ const fullStore = (): KeyValueStore => ({
 });
 
 const snapshot: ProjectSnapshot = {
-  version: 1,
+  version: 2,
   savedAt: '2026-08-17T20:00:00.000Z',
   identity: { eventName: 'Lollapalooza 2026', screenName: 'Main Stage' },
   target: { calcMode: 'dimensions', targetWidthM: 4, targetHeightM: 2.5, cols: 6, rows: 4 },
@@ -63,7 +63,7 @@ const snapshot: ProjectSnapshot = {
       maxPixelsPerPort: 650_000,
     },
   },
-  supply: { pduCapacityAmps: 96, breakerAmps: 16, cableLoopAmps: 16 },
+  supply: { voltage: 220, pduCapacityAmps: 96, breakerAmps: 16, cableLoopAmps: 16 },
   routing: {
     layer: 'data',
     priority: 'vertical',

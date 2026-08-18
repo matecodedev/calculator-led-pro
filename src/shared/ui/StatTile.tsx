@@ -5,7 +5,7 @@ interface StatTileProps {
   value: ReactNode;
   /** Small print under the value: capacities, per-unit figures, warnings. */
   footnote?: ReactNode;
-  tone?: 'neutral' | 'data' | 'power' | 'alert';
+  tone?: 'neutral' | 'data' | 'power' | 'alert' | 'safe';
   className?: string;
 }
 
@@ -14,6 +14,7 @@ const VALUE_TONE = {
   data: 'text-fuchsia-400',
   power: 'text-amber-400',
   alert: 'text-[#FF4444]',
+  safe: 'text-[#CCFF00]',
 } as const;
 
 /**

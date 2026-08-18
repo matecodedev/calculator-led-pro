@@ -13,7 +13,15 @@ import {
   type StartCorner,
 } from '../routing/serpentine';
 
-export const SNAPSHOT_VERSION = 1;
+export const SNAPSHOT_VERSION = 2;
+
+/**
+ * Version 1 had no mains-voltage field because the app hardcoded 220 V. A
+ * migrated snapshot has to keep that value: anyone's saved electrical plan was
+ * computed at 220 V, and quietly restating it at a different voltage would
+ * change every amperage in a plan they already trusted.
+ */
+export const LEGACY_LINE_VOLTAGE = 220;
 
 export type CalcMode = 'dimensions' | 'count';
 export type RoutingMode = 'auto' | 'manual';
@@ -31,7 +39,13 @@ export interface ProjectSnapshot {
   };
   cabinet: { selectedId: string; isCustom: boolean; custom: Cabinet };
   processor: { selectedId: string; isCustom: boolean; custom: Processor };
-  supply: { pduCapacityAmps: number; breakerAmps: number; cableLoopAmps: number };
+  supply: {
+    /** Mains voltage, in volts. Every amperage in the app derives from it. */
+    voltage: number;
+    pduCapacityAmps: number;
+    breakerAmps: number;
+    cableLoopAmps: number;
+  };
   routing: {
     layer: CableLayer;
     priority: RoutingPriority;
@@ -104,7 +118,10 @@ function parseProcessor(value: unknown): Processor | null {
  * so a bad save can never stop the app from starting.
  */
 export function parseSnapshot(value: unknown): ProjectSnapshot | null {
-  if (!isRecord(value) || value.version !== SNAPSHOT_VERSION) return null;
+  if (!isRecord(value)) return null;
+  // Version 1 is readable: it is this shape minus the mains voltage.
+  const isLegacy = value.version === 1;
+  if (!isLegacy && value.version !== SNAPSHOT_VERSION) return null;
 
   const { identity, target, cabinet, processor, supply, routing } = value;
   if (!isRecord(identity) || !isRecord(target) || !isRecord(cabinet)) return null;
@@ -130,6 +147,9 @@ export function parseSnapshot(value: unknown): ProjectSnapshot | null {
   if (!isFiniteNumber(pduCapacityAmps) || !isFiniteNumber(breakerAmps)) return null;
   if (!isFiniteNumber(cableLoopAmps)) return null;
 
+  const voltage = isLegacy && supply.voltage === undefined ? LEGACY_LINE_VOLTAGE : supply.voltage;
+  if (!isFiniteNumber(voltage) || voltage <= 0) return null;
+
   if (!isOneOf(routing.layer, ['data', 'power'] as const)) return null;
   if (!isOneOf(routing.priority, ['vertical', 'horizontal'] as const)) return null;
   if (!isOneOf(routing.start, START_CORNERS)) return null;
@@ -154,7 +174,7 @@ export function parseSnapshot(value: unknown): ProjectSnapshot | null {
       isCustom: processor.isCustom,
       custom: customProcessor,
     },
-    supply: { pduCapacityAmps, breakerAmps, cableLoopAmps },
+    supply: { voltage, pduCapacityAmps, breakerAmps, cableLoopAmps },
     routing: {
       layer: routing.layer,
       priority: routing.priority,

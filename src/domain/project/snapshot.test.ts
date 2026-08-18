@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { describeSnapshot, parseSnapshot, type ProjectSnapshot } from './snapshot';
+import {
+  describeSnapshot,
+  LEGACY_LINE_VOLTAGE,
+  parseSnapshot,
+  SNAPSHOT_VERSION,
+  type ProjectSnapshot,
+} from './snapshot';
 
 const snapshot: ProjectSnapshot = {
-  version: 1,
+  version: 2,
   savedAt: '2026-08-17T20:00:00.000Z',
   identity: { eventName: 'Lollapalooza 2026', screenName: 'Main Stage' },
   target: { calcMode: 'dimensions', targetWidthM: 4, targetHeightM: 2.5, cols: 6, rows: 4 },
@@ -34,7 +40,7 @@ const snapshot: ProjectSnapshot = {
       maxPixelsPerPort: 650_000,
     },
   },
-  supply: { pduCapacityAmps: 96, breakerAmps: 16, cableLoopAmps: 16 },
+  supply: { voltage: 230, pduCapacityAmps: 96, breakerAmps: 16, cableLoopAmps: 16 },
   routing: {
     layer: 'data',
     priority: 'vertical',
@@ -80,8 +86,8 @@ describe('parseSnapshot', () => {
     expect(parseSnapshot(value)).toBeNull();
   });
 
-  it('rejects a snapshot from a different version', () => {
-    expect(roundTrip({ ...snapshot, version: 2 })).toBeNull();
+  it('rejects a snapshot from an unknown future version', () => {
+    expect(roundTrip({ ...snapshot, version: 99 })).toBeNull();
   });
 
   it.each([
@@ -97,6 +103,40 @@ describe('parseSnapshot', () => {
     ['custom processor', { processor: { ...snapshot.processor, custom: null } }],
   ])('rejects a snapshot with a broken %s', (_label, patch) => {
     expect(roundTrip({ ...snapshot, ...patch })).toBeNull();
+  });
+
+  it('migrates a version 1 snapshot, which predates the mains-voltage field', () => {
+    // Everything saved before the voltage selector existed was implicitly 220 V,
+    // because that is what the app hardcoded. Assuming anything else would
+    // silently restate someone's electrical plan.
+    const { supply, ...rest } = snapshot;
+    const { voltage: _dropped, ...supplyWithoutVoltage } = supply;
+    const v1 = { ...rest, version: 1, supply: supplyWithoutVoltage };
+
+    const migrated = roundTrip(v1);
+
+    expect(migrated?.version).toBe(SNAPSHOT_VERSION);
+    expect(migrated?.supply.voltage).toBe(LEGACY_LINE_VOLTAGE);
+    expect(migrated?.supply.pduCapacityAmps).toBe(96);
+    expect(migrated?.routing.manualData).toEqual(snapshot.routing.manualData);
+  });
+
+  it('rejects a version 1 snapshot that is broken in some other way', () => {
+    const { supply, ...rest } = snapshot;
+    const { voltage: _dropped, ...supplyWithoutVoltage } = supply;
+
+    expect(
+      roundTrip({
+        ...rest,
+        version: 1,
+        supply: supplyWithoutVoltage,
+        identity: { eventName: 'x' },
+      }),
+    ).toBeNull();
+  });
+
+  it('rejects a snapshot with a non-numeric voltage', () => {
+    expect(roundTrip({ ...snapshot, supply: { ...snapshot.supply, voltage: 'mains' } })).toBeNull();
   });
 
   it('tolerates a missing timestamp rather than discarding the work', () => {

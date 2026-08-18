@@ -21,7 +21,7 @@ import { buttonFocusClass } from '../../shared/ui/controls';
 import CabinetPanel from './components/CabinetPanel';
 import ElectricalPanel from './components/ElectricalPanel';
 import ProcessingPanel from './components/ProcessingPanel';
-import ProjectAlerts from './components/ProjectAlerts';
+import ProjectAlerts, { type DangerAlert } from './components/ProjectAlerts';
 import ProjectBar from './components/ProjectBar';
 import ProjectIdentityPanel from './components/ProjectIdentityPanel';
 import RoutingSchematic from './components/RoutingSchematic';
@@ -92,6 +92,16 @@ function CalculatorWorkspace({
   const storageAvailable = browserStore() !== null;
 
   const { results, issues } = draft;
+
+  // The one hazard in this app that can hurt someone. It gets the global alarm
+  // channel, above the fold, on every breakpoint — not a footnote two screens down.
+  const danger: DangerAlert | null =
+    results && results.maxAmps > draft.supply.pduCapacityAmps
+      ? {
+          headline: 'Over supply capacity',
+          detail: `This screen draws ${results.maxAmps.toFixed(1)} A at ${draft.supply.voltage} V, but the supply provides ${draft.supply.pduCapacityAmps} A. Reduce the screen, split it across supplies, or get a bigger feed.`,
+        }
+      : null;
 
   // Serialising gives the effect a stable dependency; the object identity
   // changes on every render, the text only changes when the work does.
@@ -206,7 +216,7 @@ function CalculatorWorkspace({
         onDelete={handleDelete}
       />
 
-      <ProjectAlerts issues={issues} exportError={exportError} />
+      <ProjectAlerts danger={danger} issues={issues} exportError={exportError} />
 
       <ProjectIdentityPanel {...draft.identity} />
 

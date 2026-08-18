@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Calculator, Library as LibraryIcon, Wrench, Heart } from 'lucide-react';
 import type { TabState } from './types';
+import { useOnlineStatus } from './shared/useOnlineStatus';
 import CalculatorScreen from './features/calculator/CalculatorScreen';
 import LibraryScreen from './features/library/LibraryScreen';
 import TroubleshootingScreen from './features/troubleshooting/TroubleshootingScreen';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabState>('calculator');
+  const online = useOnlineStatus();
 
   return (
     <div className="min-h-screen h-screen bg-[#0F0F0F] text-[#E0E0E0] font-sans flex flex-col w-full overflow-hidden">
@@ -21,16 +23,14 @@ export default function App() {
             <span className="text-[#CCFF00] opacity-80 text-xs">by MateCode</span>
           </h1>
         </div>
-        <div className="flex items-center space-x-2 sm:space-x-6">
-          <div className="hidden sm:flex items-center space-x-2">
-            <div className="w-2 h-2 rounded-full bg-green-500"></div>
-            <span className="text-[10px] uppercase tracking-widest opacity-60">
-              System Ready / Offline Active
-            </span>
-          </div>
-          <div className="text-[9px] sm:text-[11px] font-mono opacity-80 bg-[#222] px-2 py-1 border border-[#444]">
-            SYS: ONLINE
-          </div>
+        <div className="flex items-center gap-2">
+          <span
+            className={`w-2 h-2 rounded-full ${online ? 'bg-green-500' : 'bg-amber-400'}`}
+            aria-hidden="true"
+          />
+          <span className="text-[11px] uppercase tracking-widest text-neutral-300">
+            {online ? 'Online' : 'Offline'}
+          </span>
         </div>
       </nav>
 
@@ -128,12 +128,12 @@ export default function App() {
 
       {/* Footer Status Bar (Desktop) */}
       <footer className="hidden sm:flex h-10 border-t border-[#333] bg-[#000] px-6 items-center justify-between text-[10px] font-mono shrink-0">
-        <div className="opacity-50">GEO: EVENT-SITE-04 | RACK-ID: B-02</div>
-        <div className="flex items-center space-x-2 opacity-80 transition-opacity hover:opacity-100">
+        <div className="text-neutral-500">Calculator Led Pro</div>
+        <div className="flex items-center space-x-2 text-neutral-300 transition-opacity hover:opacity-100">
           <span className="uppercase tracking-widest text-[#E0E0E0] font-sans text-xs">
             Hecho con
           </span>
-          <Heart className="w-3.5 h-3.5 text-[#CCFF00] fill-[#CCFF00] animate-pulse" />
+          <Heart className="w-3.5 h-3.5 text-[#CCFF00] fill-[#CCFF00]" aria-hidden="true" />
           <span className="uppercase tracking-widest text-[#E0E0E0] font-sans font-bold text-xs">
             por MateCode
           </span>

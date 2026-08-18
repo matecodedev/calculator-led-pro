@@ -87,8 +87,8 @@ export default function ProcessingPanel({ choice, results }: ProcessingPanelProp
             />
             <StatTile
               label="Processors Needed"
-              tone={overCapacity ? 'alert' : 'neutral'}
-              className={`bg-[#161616] ${overCapacity ? 'border-[#FF4444]' : 'border-[#333]'}`}
+              tone={overCapacity ? 'power' : 'neutral'}
+              className={`bg-[#161616] ${overCapacity ? 'border-amber-500' : 'border-[#333]'}`}
               value={
                 <>
                   {results.processorsNeeded}
@@ -97,8 +97,9 @@ export default function ProcessingPanel({ choice, results }: ProcessingPanelProp
               }
               footnote={
                 overCapacity && (
-                  <span className="text-[#FF4444] font-bold tracking-widest uppercase">
-                    Capacity exceeded
+                  <span className="text-amber-400 font-bold tracking-widest uppercase">
+                    Add {results.processorsNeeded - 1} more processor
+                    {results.processorsNeeded > 2 ? 's' : ''}
                   </span>
                 )
               }
