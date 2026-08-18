@@ -47,7 +47,7 @@ export default function SegmentedControl<T extends string>({
           return (
             <label
               key={segment.value}
-              className={`flex-1 flex items-center justify-center gap-2 px-3 py-1.5 text-[11px] uppercase font-bold tracking-wider rounded-sm cursor-pointer transition-colors ${
+              className={`flex-1 min-h-11 flex items-center justify-center gap-2 px-3 py-2 text-[11px] uppercase font-bold tracking-wider rounded-sm cursor-pointer transition-colors ${
                 selected
                   ? SELECTED[variant][accent]
                   : 'text-neutral-400 hover:text-white hover:bg-[#222]'

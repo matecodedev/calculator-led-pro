@@ -17,7 +17,7 @@ const cornerLabel = (corner: StartCorner) =>
     .map((part) => part[0].toUpperCase() + part.slice(1))
     .join('-');
 
-const actionClass = `border rounded-sm px-3 py-2 text-[11px] font-bold uppercase tracking-wider transition-colors h-[34px] ${buttonFocusClass}`;
+const actionClass = `border rounded-sm px-3 py-2 min-h-11 text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${buttonFocusClass}`;
 
 interface RoutingToolbarProps {
   plan: RoutingPlan;
@@ -91,7 +91,7 @@ export default function RoutingToolbar({ plan, onAutoFill }: RoutingToolbarProps
             id={id}
             value={plan.priority}
             onChange={(e) => plan.setPriority(e.target.value as RoutingPriority)}
-            className={`${selectControlClass('lime')} text-[11px] h-[34px] py-0`}
+            className={`${selectControlClass('lime')} text-[11px]`}
           >
             <option value="vertical">Vertical Snake</option>
             <option value="horizontal">Horizontal Snake</option>
@@ -105,7 +105,7 @@ export default function RoutingToolbar({ plan, onAutoFill }: RoutingToolbarProps
             id={id}
             value={plan.start}
             onChange={(e) => plan.setStart(e.target.value as StartCorner)}
-            className={`${selectControlClass('lime')} text-[11px] h-[34px] py-0`}
+            className={`${selectControlClass('lime')} text-[11px]`}
           >
             {START_CORNERS.map((corner) => (
               <option key={corner} value={corner}>
@@ -121,7 +121,7 @@ export default function RoutingToolbar({ plan, onAutoFill }: RoutingToolbarProps
           <span className="block text-[11px] uppercase tracking-wide text-neutral-400 mb-1">
             Manual Controls
           </span>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={onAutoFill}

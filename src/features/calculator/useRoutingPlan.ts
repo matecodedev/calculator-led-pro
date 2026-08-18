@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import type { ProjectCalculation } from '../../domain/calculate';
 import type { ProjectSnapshot } from '../../domain/project/snapshot';
+import { clampRoutesToGrid } from '../../domain/routing/clamp';
 import type { CableLayer } from '../../domain/routing/palette';
 import {
   planRoutes,
@@ -39,12 +40,39 @@ export function useRoutingPlan(
   // Hand-drawn routes hold cell coordinates, so they only mean anything on the
   // grid they were drawn on. That grid comes from `results`, which in
   // 'dimensions' mode also moves with the target size and the chosen cabinet.
+  //
+  // Resizing used to discard the whole drawing. Now the cabinets that still
+  // exist survive, the ones that fell outside are reported, and the originals
+  // are held so that undoing the resize brings the drawing back intact.
   const gridSignature = results ? `${results.cols}x${results.rows}` : 'none';
   const [drawnOn, setDrawnOn] = useState(gridSignature);
+  const [stash, setStash] = useState<{
+    signature: string;
+    data: GridPosition[][];
+    power: GridPosition[][];
+  } | null>(null);
+  const [dropped, setDropped] = useState(0);
+
   if (drawnOn !== gridSignature) {
+    const returningToStash = stash?.signature === gridSignature;
+
+    if (returningToStash && stash) {
+      setManualData(stash.data);
+      setManualPower(stash.power);
+      setStash(null);
+      setDropped(0);
+    } else if (results) {
+      const grid = { cols: results.cols, rows: results.rows };
+      const nextData = clampRoutesToGrid(manualData, grid);
+      const nextPower = clampRoutesToGrid(manualPower, grid);
+      const lost = nextData.dropped + nextPower.dropped;
+
+      if (lost > 0) setStash({ signature: drawnOn, data: manualData, power: manualPower });
+      setManualData(nextData.runs.length > 0 ? nextData.runs : [[]]);
+      setManualPower(nextPower.runs.length > 0 ? nextPower.runs : [[]]);
+      setDropped(lost);
+    }
     setDrawnOn(gridSignature);
-    setManualData([[]]);
-    setManualPower([[]]);
   }
 
   /** The automatic serpentine for a given cable capacity. */
@@ -77,6 +105,13 @@ export function useRoutingPlan(
     manualRoutesForActiveLayer: layer === 'data' ? manualData : manualPower,
     autoRoutesFor,
     routesFor,
+    /**
+     * Cabinets dropped by the most recent resize, and the grid to go back to if
+     * the technician wants them returned.
+     */
+    droppedByResize: dropped,
+    restoreGrid: stash?.signature ?? null,
+    dismissDropNotice: () => setDropped(0),
     /** This hook's share of the saved document. */
     snapshotSlice: { layer, priority, start, mode, manualData, manualPower },
     /** Replaces both layers with the generated serpentine. */

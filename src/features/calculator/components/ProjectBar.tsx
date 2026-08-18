@@ -17,7 +17,7 @@ interface ProjectBarProps {
   onDelete: (id: string) => void;
 }
 
-const actionClass = `flex items-center gap-2 px-3 py-2 text-[11px] font-bold uppercase tracking-wider rounded-sm border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${buttonFocusClass}`;
+const actionClass = `flex items-center gap-2 px-3 py-2 min-h-11 text-[11px] font-bold uppercase tracking-wider rounded-sm border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${buttonFocusClass}`;
 
 export default function ProjectBar({
   projects,

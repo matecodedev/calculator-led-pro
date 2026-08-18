@@ -1,4 +1,5 @@
-import { Route } from 'lucide-react';
+import { useState } from 'react';
+import { Maximize2, Minimize2, Route } from 'lucide-react';
 
 import { cableColors, OVER_CAPACITY_COLOR } from '../../../domain/routing/palette';
 import type { GridPosition } from '../../../domain/routing/serpentine';
@@ -34,8 +35,15 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
     y: p.y * cellHeight + cellHeight / 2,
   });
   const scale = Math.min(cellWidth, cellHeight) / 50;
+  const [fullscreen, setFullscreen] = useState(false);
 
-  /** Pull a link back from both cabinet centres so its arrowhead reads clearly. */
+  /**
+   * Sized in user space, not stroke widths, so the arrowhead stays a direction
+   * mark on a continuous line instead of swelling into a chevron per cabinet.
+   */
+  const arrowSize = Math.min(cellWidth, cellHeight) * 0.22;
+
+  /** Retract a link slightly from both cabinet centres so the run reads as a line. */
   const shrink = (from: GridPosition, to: GridPosition) => {
     const a = centreOf(from);
     const b = centreOf(to);
@@ -44,7 +52,7 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
     const length = Math.hypot(dx, dy);
     if (length === 0) return { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
 
-    const padding = Math.min(cellWidth, cellHeight) * 0.25;
+    const padding = Math.min(cellWidth, cellHeight) * 0.12;
     const nx = (dx / length) * padding;
     const ny = (dy / length) * padding;
     return { x1: a.x + nx, y1: a.y + ny, x2: b.x - nx, y2: b.y - ny };
@@ -72,14 +80,24 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
     });
   };
 
-  const routedCabinets = plan.manualRoutesForActiveLayer.reduce((sum, run) => sum + run.length, 0);
+  const routedCabinets = runs.reduce((sum, run) => sum + run.length, 0);
 
   return (
     <div className="bg-[#111] p-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-6 gap-4">
-        <SectionHeading icon={<Route className="w-4 h-4" />} accent="blue" className="">
-          Cable Routing Schematics
-        </SectionHeading>
+        <div className="flex items-center gap-3">
+          <SectionHeading icon={<Route className="w-4 h-4" />} accent="blue" className="">
+            Cable Routing Schematics
+          </SectionHeading>
+          <button
+            type="button"
+            onClick={() => setFullscreen(true)}
+            className="flex items-center gap-2 px-3 py-2 min-h-11 text-[11px] font-bold uppercase tracking-wider rounded-sm border border-[#444] text-neutral-300 hover:text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#CCFF00]"
+          >
+            <Maximize2 className="w-3.5 h-3.5" aria-hidden="true" />
+            Fullscreen
+          </button>
+        </div>
         <RoutingToolbar
           plan={plan}
           onAutoFill={() => plan.fillFromAuto(screen.dataCapacity, screen.powerCapacity)}
@@ -109,14 +127,34 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
             </div>
           </div>
 
-          <div className="bg-[#0A0A0A] border border-[#333] p-4 flex justify-center items-center overflow-x-auto w-full">
+          <div
+            className={
+              fullscreen
+                ? 'fixed inset-0 z-50 bg-[#0A0A0A] p-4 flex justify-center items-center'
+                : 'bg-[#0A0A0A] border border-[#333] p-4 flex justify-center items-center overflow-x-auto w-full min-h-[300px]'
+            }
+          >
+            {fullscreen && (
+              <button
+                type="button"
+                onClick={() => setFullscreen(false)}
+                className="absolute top-4 right-4 z-10 flex items-center gap-2 px-3 py-2 min-h-11 text-[11px] font-bold uppercase tracking-wider rounded-sm border border-[#444] bg-[#111] text-neutral-200 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#CCFF00]"
+              >
+                <Minimize2 className="w-3.5 h-3.5" aria-hidden="true" />
+                Close
+              </button>
+            )}
             <svg
               width="100%"
               height="100%"
               viewBox={`0 0 ${cols * cellWidth} ${rows * cellHeight}`}
               preserveAspectRatio="xMidYMid meet"
               className="flex-shrink-0"
-              style={{ maxHeight: '70vh', minHeight: '300px', maxWidth: '100%' }}
+              style={
+                fullscreen
+                  ? { maxHeight: '100%', maxWidth: '100%' }
+                  : { maxHeight: '70vh', maxWidth: '100%' }
+              }
               role="img"
               aria-label={`${plan.layer} routing over a ${cols} by ${rows} cabinet grid, ${runs.length} cables`}
             >
@@ -126,10 +164,11 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
                     key={color}
                     id={`arrow-${plan.layer}-${i}`}
                     viewBox="0 0 10 10"
-                    refX="8"
+                    refX="5"
                     refY="5"
-                    markerWidth="6"
-                    markerHeight="6"
+                    markerWidth={arrowSize}
+                    markerHeight={arrowSize}
+                    markerUnits="userSpaceOnUse"
                     orient="auto-start-reverse"
                   >
                     <path d="M 0 1 L 10 5 L 0 9 z" fill={color} />
@@ -146,7 +185,7 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
                     width={cellWidth}
                     height={cellHeight}
                     fill="#111"
-                    stroke="#333"
+                    stroke="#666"
                     strokeWidth="1"
                     onClick={() => toggleCabinet(c, r)}
                     className={
@@ -187,6 +226,25 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
                         </text>
                       </g>
                     )}
+
+                    {run.map((cabinet, step) => {
+                      if (step === 0) return null;
+                      const at = centreOf(cabinet);
+                      return (
+                        <text
+                          key={`no-${i}-${step}`}
+                          x={at.x}
+                          y={at.y + 3.5 * scale}
+                          textAnchor="middle"
+                          fontSize={10 * scale}
+                          fill={color}
+                          fillOpacity={0.85}
+                          fontFamily="monospace"
+                        >
+                          {step + 1}
+                        </text>
+                      );
+                    })}
 
                     {run.slice(0, -1).map((cabinet, step) => {
                       const line = shrink(cabinet, run[step + 1]);

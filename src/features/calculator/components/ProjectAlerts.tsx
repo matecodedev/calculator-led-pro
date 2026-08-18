@@ -1,4 +1,4 @@
-import { AlertTriangle, Zap } from 'lucide-react';
+import { AlertTriangle, Info, X, Zap } from 'lucide-react';
 
 import type { FieldIssue } from '../../../domain/validation';
 
@@ -17,9 +17,11 @@ interface ProjectAlertsProps {
   danger: DangerAlert | null;
   issues: FieldIssue[];
   exportError: string | null;
+  /** Something the app did to the user's work that they need to know about. */
+  notice: { message: string; onDismiss: () => void } | null;
 }
 
-export default function ProjectAlerts({ danger, issues, exportError }: ProjectAlertsProps) {
+export default function ProjectAlerts({ danger, issues, exportError, notice }: ProjectAlertsProps) {
   return (
     <div role="alert" aria-live="assertive">
       {danger && (
@@ -36,6 +38,21 @@ export default function ProjectAlerts({ danger, issues, exportError }: ProjectAl
         <p className="px-4 py-3 bg-[#2A2213] border-b border-amber-500 text-amber-200 text-xs">
           {exportError}
         </p>
+      )}
+
+      {notice && (
+        <div className="px-4 py-3 bg-[#10282F] border-b border-[#2F6D80] flex items-start gap-3">
+          <Info className="w-4 h-4 shrink-0 mt-0.5 text-[#7FD4E8]" aria-hidden="true" />
+          <p className="text-[#CFEAF2] text-xs flex-1">{notice.message}</p>
+          <button
+            type="button"
+            onClick={notice.onDismiss}
+            aria-label="Dismiss notice"
+            className="text-[#7FD4E8] hover:text-white shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#CCFF00]"
+          >
+            <X className="w-4 h-4" aria-hidden="true" />
+          </button>
+        </div>
       )}
 
       {issues.length > 0 && (

@@ -171,7 +171,7 @@ function CalculatorWorkspace({
   };
 
   const exportButtonClass =
-    'flex items-center justify-center gap-2 bg-[#CCFF00] text-black font-bold uppercase tracking-wider ' +
+    'flex items-center justify-center gap-2 min-h-11 bg-[#CCFF00] text-black font-bold uppercase tracking-wider ' +
     `rounded-sm transition-colors hover:bg-[#aacc00] disabled:opacity-40 disabled:cursor-not-allowed ${buttonFocusClass}`;
 
   return (
@@ -216,7 +216,21 @@ function CalculatorWorkspace({
         onDelete={handleDelete}
       />
 
-      <ProjectAlerts danger={danger} issues={issues} exportError={exportError} />
+      <ProjectAlerts
+        danger={danger}
+        issues={issues}
+        exportError={exportError}
+        notice={
+          plan.droppedByResize > 0
+            ? {
+                message: `The grid changed, so ${plan.droppedByResize} hand-drawn ${
+                  plan.droppedByResize === 1 ? 'cabinet' : 'cabinets'
+                } no longer exist and were removed from the routing. Go back to ${plan.restoreGrid} to get the drawing back.`,
+                onDismiss: plan.dismissDropNotice,
+              }
+            : null
+        }
+      />
 
       <ProjectIdentityPanel {...draft.identity} />
 
