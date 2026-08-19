@@ -1,6 +1,4 @@
 {
   "name": "Calculator Led Pro by MateCode",
-  "description": "Calculadora, biblioteca de especificaciones y guías de resolución de problemas para técnicos de pantallas LED en eventos.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "description": "Calculadora, biblioteca de especificaciones y guías de resolución de problemas para técnicos de pantallas LED en eventos."
 }

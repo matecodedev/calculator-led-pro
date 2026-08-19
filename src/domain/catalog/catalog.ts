@@ -295,7 +295,7 @@ export const guides: Guide[] = [
   },
   {
     id: 'g5',
-    issue: 'Panel no enciende (Ni video, ni LEDs indicadores atrá)',
+    issue: 'Panel no enciende (Ni video, ni LEDs indicadores atrás)',
     cause:
       'La fuente de alimentación interna (Power Supply) del gabinete no recibe energía o está quemada.',
     solution:
