@@ -27,10 +27,28 @@ import ProjectIdentityPanel from './components/ProjectIdentityPanel';
 import RoutingSchematic from './components/RoutingSchematic';
 import TotalOutputPanel from './components/TotalOutputPanel';
 import { useProjectDraft } from './useProjectDraft';
-import { useRoutingPlan } from './useRoutingPlan';
+import { useRoutingPlan, type ResizeNotice } from './useRoutingPlan';
 
 /** How long to wait after the last edit before writing to storage. */
 const AUTOSAVE_DELAY_MS = 500;
+
+const cabinetWord = (count: number) => (count === 1 ? 'cabinet' : 'cabinets');
+
+/** `8x5` reads as a grid, not as a multiplication the technician typed. */
+const describeGrid = (signature: string) => signature.replace('x', ' × ');
+
+function resizeNoticeMessage(notice: NonNullable<ResizeNotice>): string {
+  if (notice.kind === 'restored') {
+    return `${notice.count} hand-drawn ${cabinetWord(notice.count)} restored from the last time this screen was this size.`;
+  }
+  // Naming the grid rather than the field is deliberate: in dimensions mode the
+  // technician typed metres, so "go back to what you typed" would be a lie.
+  return `The screen changed size, so ${notice.count} hand-drawn ${cabinetWord(
+    notice.count,
+  )} no longer exist and were removed from the routing. Set the screen back to ${describeGrid(
+    notice.restoreGrid,
+  )} cabinets and the drawing returns.`;
+}
 
 interface Session {
   /** Bumping this remounts the workspace, which reseeds every field. */
@@ -221,12 +239,10 @@ function CalculatorWorkspace({
         issues={issues}
         exportError={exportError}
         notice={
-          plan.droppedByResize > 0
+          plan.resizeNotice
             ? {
-                message: `The grid changed, so ${plan.droppedByResize} hand-drawn ${
-                  plan.droppedByResize === 1 ? 'cabinet' : 'cabinets'
-                } no longer exist and were removed from the routing. Go back to ${plan.restoreGrid} to get the drawing back.`,
-                onDismiss: plan.dismissDropNotice,
+                message: resizeNoticeMessage(plan.resizeNotice),
+                onDismiss: plan.dismissResizeNotice,
               }
             : null
         }
