@@ -8,7 +8,11 @@
 
 import type { ProjectCalculation } from '../../domain/calculate';
 import type { Cabinet, Processor } from '../../domain/catalog';
-import { DATA_CABLE_COLORS, POWER_CABLE_COLORS } from '../../domain/routing/palette';
+import {
+  DATA_CABLE_COLORS,
+  OVER_CAPACITY_COLOR,
+  POWER_CABLE_COLORS,
+} from '../../domain/routing/palette';
 import type { GridPosition } from '../../domain/routing/serpentine';
 
 export interface ProjectReport {
@@ -155,6 +159,7 @@ export async function renderProjectReport(report: ProjectReport): Promise<Blob> 
     title: string,
     routes: GridPosition[][],
     colors: readonly string[],
+    capacity: number,
     startY: number,
   ): number => {
     doc.setFontSize(14);
@@ -186,14 +191,28 @@ export async function renderProjectReport(report: ProjectReport): Promise<Blob> 
 
     doc.setLineWidth(0.6);
     routes.forEach((route, i) => {
-      const [r, g, b] = rgb(colors[i % colors.length]);
+      // The printed schematic has to carry the same fault vocabulary as the
+      // screen: reserved red, a broken line, and the carried-versus-rated count.
+      const overCapacity = route.length > capacity;
+      const [r, g, b] = rgb(overCapacity ? OVER_CAPACITY_COLOR : colors[i % colors.length]);
       doc.setDrawColor(r, g, b);
       doc.setFillColor(r, g, b);
+      doc.setLineDashPattern(overCapacity ? [1.4, 1] : [], 0);
 
       const first = route[0];
       if (first) {
         const start = centreOf(first);
         doc.circle(start.x, start.y, 1.5, 'DF');
+
+        if (overCapacity) {
+          doc.setLineDashPattern([], 0);
+          doc.setFontSize(7);
+          doc.setTextColor(r, g, b);
+          doc.setFont('helvetica', 'bold');
+          doc.text(`${route.length}/${capacity}`, start.x, start.y + 4.5, { align: 'center' });
+          doc.setFont('helvetica', 'normal');
+          doc.setLineDashPattern([1.4, 1], 0);
+        }
       }
 
       for (let step = 0; step < route.length - 1; step++) {
@@ -214,6 +233,9 @@ export async function renderProjectReport(report: ProjectReport): Promise<Blob> 
         const x2 = to.x - nx * padding;
         const y2 = to.y - ny * padding;
         doc.line(x1, y1, x2, y2);
+        // The direction mark stays solid: dashing a 1.5mm filled triangle only
+        // makes it ragged, and the broken line already carries the warning.
+        doc.setLineDashPattern([], 0);
 
         const angle = Math.atan2(dy, dx);
         const head = 1.5;
@@ -226,7 +248,11 @@ export async function renderProjectReport(report: ProjectReport): Promise<Blob> 
           y2 - head * Math.sin(angle + Math.PI / 6),
           'DF',
         );
+
+        if (overCapacity) doc.setLineDashPattern([1.4, 1], 0);
       }
+
+      doc.setLineDashPattern([], 0);
     });
 
     return offsetY + calc.rows * cellHeight + 15;
@@ -237,12 +263,14 @@ export async function renderProjectReport(report: ProjectReport): Promise<Blob> 
     `Data Routing Schematic (${calc.cabinetsPerDataPort} cab/line max)`,
     report.dataRoutes,
     DATA_CABLE_COLORS,
+    calc.cabinetsPerDataPort,
     20,
   );
   drawSchematic(
     `Power Routing Schematic (${calc.cabinetsPerPowerCable} cab/line max)`,
     report.powerRoutes,
     POWER_CABLE_COLORS,
+    calc.cabinetsPerPowerCable,
     afterData,
   );
 
