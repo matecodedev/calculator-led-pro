@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Calculator, Library as LibraryIcon, Wrench, Heart } from 'lucide-react';
 import type { TabState } from './types';
 import { useOnlineStatus } from './shared/useOnlineStatus';
+import ServiceWorkerNotice from './shared/ui/ServiceWorkerNotice';
 import CalculatorScreen from './features/calculator/CalculatorScreen';
 import LibraryScreen from './features/library/LibraryScreen';
 import TroubleshootingScreen from './features/troubleshooting/TroubleshootingScreen';
@@ -125,6 +126,8 @@ export default function App() {
           </button>
         </div>
       </nav>
+
+      <ServiceWorkerNotice />
 
       {/* Footer Status Bar (Desktop) */}
       <footer className="hidden sm:flex h-10 border-t border-[#333] bg-[#000] px-6 items-center justify-between text-[10px] font-mono shrink-0">
