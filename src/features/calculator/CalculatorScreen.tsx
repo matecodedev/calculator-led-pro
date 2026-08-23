@@ -96,6 +96,8 @@ function blankScreen(): ScreenSnapshot {
         dataPorts: 4,
         maxPixelsPerPort: 650000,
         maxPixelsTotal: 4 * 650_000,
+        maxCanvasWidth: 10_240,
+        maxCanvasHeight: 8_192,
       },
     },
     supply: { voltage: 220, pduCapacityAmps: 96, breakerAmps: 16, cableLoopAmps: 16 },
@@ -368,8 +370,12 @@ function ScreenEditor({ initial, eventDanger, exportError, onScreenChange }: Scr
         dataPortsPerProcessor: draft.processorChoice.processor.dataPorts,
         totalPixels: results.totalPixels,
         maxPixelsPerProcessor: draft.processorChoice.processor.maxPixelsTotal,
+        resX: results.resX,
+        resY: results.resY,
+        maxCanvasWidth: draft.processorChoice.processor.maxCanvasWidth,
+        maxCanvasHeight: draft.processorChoice.processor.maxCanvasHeight,
       })
-    : { dataCables: 0, powerCables: 0, processorsNeeded: 0 };
+    : { dataCables: 0, powerCables: 0, processorsNeeded: 0, processorLimit: null };
 
   const screenJson = useMemo(
     () => JSON.stringify({ id: initial.id, ...draft.snapshotSlice, routing: plan.snapshotSlice }),

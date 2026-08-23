@@ -15,6 +15,10 @@ describe('routingDemand', () => {
       dataPortsPerProcessor: 4,
       totalPixels: 1_000_000,
       maxPixelsPerProcessor: 8_800_000,
+      resX: 100,
+      resY: 100,
+      maxCanvasWidth: 10_240,
+      maxCanvasHeight: 8_192,
     });
 
     expect(demand.dataCables).toBe(4);
@@ -32,6 +36,10 @@ describe('routingDemand', () => {
       dataPortsPerProcessor: 4,
       totalPixels: 1_000_000,
       maxPixelsPerProcessor: 8_800_000,
+      resX: 100,
+      resY: 100,
+      maxCanvasWidth: 10_240,
+      maxCanvasHeight: 8_192,
     });
 
     expect(Math.ceil(60 / 23)).toBe(3);
@@ -50,6 +58,10 @@ describe('routingDemand', () => {
       dataPortsPerProcessor: 16,
       totalPixels: 10_000_000,
       maxPixelsPerProcessor: 8_800_000,
+      resX: 100,
+      resY: 100,
+      maxCanvasWidth: 10_240,
+      maxCanvasHeight: 8_192,
     });
 
     expect(demand.processorsNeeded).toBe(2);
@@ -62,9 +74,79 @@ describe('routingDemand', () => {
       dataPortsPerProcessor: 6,
       totalPixels: 1_000_000,
       maxPixelsPerProcessor: 8_800_000,
+      resX: 100,
+      resY: 100,
+      maxCanvasWidth: 10_240,
+      maxCanvasHeight: 8_192,
     });
 
     expect(byPorts.processorsNeeded).toBe(2);
+  });
+
+  it('needs one controller per canvas tile when the screen outgrows the canvas', () => {
+    // A VX1000 drives a canvas 10,240 px wide. A wider screen has to be split
+    // across controllers however few pixels it has, because no single box can
+    // address that width.
+    const demand = routingDemand({
+      dataRuns: runs(9, 2),
+      powerRuns: [],
+      dataPortsPerProcessor: 10,
+      totalPixels: 1_000_000,
+      maxPixelsPerProcessor: 6_500_000,
+      resX: 12_000,
+      resY: 400,
+      maxCanvasWidth: 10_240,
+      maxCanvasHeight: 8_192,
+    });
+
+    expect(demand.processorsNeeded).toBe(2);
+    expect(demand.processorLimit).toBe('canvas');
+  });
+
+  it('tiles in both directions', () => {
+    const demand = routingDemand({
+      dataRuns: runs(9, 2),
+      powerRuns: [],
+      dataPortsPerProcessor: 10,
+      totalPixels: 1_000_000,
+      maxPixelsPerProcessor: 6_500_000,
+      resX: 12_000,
+      resY: 9_000,
+      maxCanvasWidth: 10_240,
+      maxCanvasHeight: 8_192,
+    });
+
+    expect(demand.processorsNeeded).toBe(4);
+  });
+
+  it('names which ceiling bit, because the fix is different for each', () => {
+    const base = {
+      powerRuns: [],
+      resX: 100,
+      resY: 100,
+      maxCanvasWidth: 10_240,
+      maxCanvasHeight: 8_192,
+    };
+
+    expect(
+      routingDemand({
+        ...base,
+        dataRuns: runs(9, 20),
+        dataPortsPerProcessor: 10,
+        totalPixels: 1_000,
+        maxPixelsPerProcessor: 6_500_000,
+      }).processorLimit,
+    ).toBe('ports');
+
+    expect(
+      routingDemand({
+        ...base,
+        dataRuns: runs(9, 2),
+        dataPortsPerProcessor: 10,
+        totalPixels: 9_000_000,
+        maxPixelsPerProcessor: 6_500_000,
+      }).processorLimit,
+    ).toBe('pixels');
   });
 
   it('sizes the processor count from the cables that exist, not the theoretical minimum', () => {
@@ -76,6 +158,10 @@ describe('routingDemand', () => {
         dataPortsPerProcessor: 4,
         totalPixels: 1_000,
         maxPixelsPerProcessor: 8_800_000,
+        resX: 100,
+        resY: 100,
+        maxCanvasWidth: 10_240,
+        maxCanvasHeight: 8_192,
       }),
     ).toHaveProperty('processorsNeeded', 1);
     expect(
@@ -85,6 +171,10 @@ describe('routingDemand', () => {
         dataPortsPerProcessor: 4,
         totalPixels: 1_000,
         maxPixelsPerProcessor: 8_800_000,
+        resX: 100,
+        resY: 100,
+        maxCanvasWidth: 10_240,
+        maxCanvasHeight: 8_192,
       }),
     ).toHaveProperty('processorsNeeded', 2);
   });
@@ -96,6 +186,10 @@ describe('routingDemand', () => {
       dataPortsPerProcessor: 2,
       totalPixels: 1_000,
       maxPixelsPerProcessor: 8_800_000,
+      resX: 100,
+      resY: 100,
+      maxCanvasWidth: 10_240,
+      maxCanvasHeight: 8_192,
     });
 
     expect(demand.dataCables).toBe(1);
@@ -109,9 +203,18 @@ describe('routingDemand', () => {
       dataPortsPerProcessor: 4,
       totalPixels: 0,
       maxPixelsPerProcessor: 8_800_000,
+      resX: 0,
+      resY: 0,
+      maxCanvasWidth: 10_240,
+      maxCanvasHeight: 8_192,
     });
 
-    expect(demand).toEqual({ dataCables: 0, powerCables: 0, processorsNeeded: 0 });
+    expect(demand).toEqual({
+      dataCables: 0,
+      powerCables: 0,
+      processorsNeeded: 0,
+      processorLimit: null,
+    });
   });
 
   it.each([0, -1, 2.5])('rejects a processor with %s data ports', (ports) => {
@@ -122,6 +225,10 @@ describe('routingDemand', () => {
         dataPortsPerProcessor: ports,
         totalPixels: 0,
         maxPixelsPerProcessor: 8_800_000,
+        resX: 100,
+        resY: 100,
+        maxCanvasWidth: 10_240,
+        maxCanvasHeight: 8_192,
       }),
     ).toThrow(RangeError);
   });

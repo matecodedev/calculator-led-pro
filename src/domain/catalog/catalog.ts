@@ -8,7 +8,22 @@ export const processors: Processor[] = [
     dataPorts: 10,
     maxPixelsPerPort: 650_000,
     maxPixelsTotal: 6_500_000,
-    spec: { source: 'NovaStar, VX400/VX600/VX1000 product page', checkedOn: '2026-08-23' },
+    maxCanvasWidth: 10_240,
+    maxCanvasHeight: 8_192,
+    spec: { source: 'NovaStar, ficha técnica VX1000', checkedOn: '2026-08-23' },
+  },
+  {
+    // Same LED engine as the VX1000 — the Pro differs in its video inputs and
+    // layers, which this app does not plan around.
+    id: 'p10',
+    brand: 'NovaStar',
+    model: 'VX1000 Pro',
+    dataPorts: 10,
+    maxPixelsPerPort: 650_000,
+    maxPixelsTotal: 6_500_000,
+    maxCanvasWidth: 10_240,
+    maxCanvasHeight: 8_192,
+    spec: { source: 'NovaStar, ficha técnica VX1000 Pro', checkedOn: '2026-08-23' },
   },
   {
     id: 'p2',
@@ -17,6 +32,8 @@ export const processors: Processor[] = [
     dataPorts: 6,
     maxPixelsPerPort: 650_000,
     maxPixelsTotal: 3_900_000,
+    maxCanvasWidth: 10_240,
+    maxCanvasHeight: 8_192,
     spec: { source: 'NovaStar, VX400/VX600/VX1000 product page', checkedOn: '2026-08-23' },
   },
   {
@@ -26,6 +43,8 @@ export const processors: Processor[] = [
     dataPorts: 4,
     maxPixelsPerPort: 650_000,
     maxPixelsTotal: 4 * 650_000,
+    maxCanvasWidth: 10_240,
+    maxCanvasHeight: 8_192,
   },
   {
     id: 'p4',
@@ -34,6 +53,8 @@ export const processors: Processor[] = [
     dataPorts: 16,
     maxPixelsPerPort: 650_000,
     maxPixelsTotal: 8_800_000,
+    maxCanvasWidth: 10_240,
+    maxCanvasHeight: 8_192,
     spec: { source: 'NovaStar, MCTRL4K product page', checkedOn: '2026-08-23' },
   },
   {
@@ -43,6 +64,8 @@ export const processors: Processor[] = [
     dataPorts: 2,
     maxPixelsPerPort: 650_000,
     maxPixelsTotal: 1_310_720,
+    maxCanvasWidth: 10_240,
+    maxCanvasHeight: 8_192,
     spec: { source: 'NovaStar, MCTRL300 (1280x1024 maximum)', checkedOn: '2026-08-23' },
   },
   {
@@ -52,6 +75,8 @@ export const processors: Processor[] = [
     dataPorts: 20,
     maxPixelsPerPort: 650_000,
     maxPixelsTotal: 8_800_000,
+    maxCanvasWidth: 10_240,
+    maxCanvasHeight: 8_192,
     spec: { source: 'NovaStar, MX40 Pro product page', checkedOn: '2026-08-23' },
   },
   {
@@ -61,6 +86,8 @@ export const processors: Processor[] = [
     dataPorts: 16,
     maxPixelsPerPort: 650_000,
     maxPixelsTotal: 16 * 650_000,
+    maxCanvasWidth: 10_240,
+    maxCanvasHeight: 8_192,
   },
   {
     id: 'p8',
@@ -69,6 +96,8 @@ export const processors: Processor[] = [
     dataPorts: 6,
     maxPixelsPerPort: 650_000,
     maxPixelsTotal: 6 * 650_000,
+    maxCanvasWidth: 10_240,
+    maxCanvasHeight: 8_192,
   },
   {
     id: 'p9',
@@ -77,6 +106,8 @@ export const processors: Processor[] = [
     dataPorts: 8,
     maxPixelsPerPort: 650_000,
     maxPixelsTotal: 8 * 650_000,
+    maxCanvasWidth: 10_240,
+    maxCanvasHeight: 8_192,
   },
 ];
 

@@ -49,6 +49,14 @@ export interface Processor {
    * MCTRL4K has sixteen ports worth 10.4 M between them and carries 8.8 M.
    */
   maxPixelsTotal: number;
+  /**
+   * The LED canvas one controller can address — NOT a video input resolution.
+   * A VX1000 reaches 10,240 x 8,192 and still only drives 6.5 M pixels inside
+   * it, so neither figure implies the other and a wide, short screen can need
+   * a second controller with capacity to spare.
+   */
+  maxCanvasWidth: number;
+  maxCanvasHeight: number;
   /** Absent means nobody has checked these figures against a datasheet. */
   spec?: SpecSource;
 }
