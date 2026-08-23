@@ -30,6 +30,7 @@ import ProcessingPanel from './components/ProcessingPanel';
 import ProjectAlerts, { type DangerAlert } from './components/ProjectAlerts';
 import ProjectBar from './components/ProjectBar';
 import ProjectIdentityPanel from './components/ProjectIdentityPanel';
+import RiggingPanel from './components/RiggingPanel';
 import RoutingSchematic from './components/RoutingSchematic';
 import TotalOutputPanel from './components/TotalOutputPanel';
 import { useProjectDraft } from './useProjectDraft';
@@ -96,6 +97,7 @@ function blankScreen(): ScreenSnapshot {
     },
     supply: { voltage: 220, pduCapacityAmps: 96, breakerAmps: 16, cableLoopAmps: 16 },
     operating: { brightness: 1, content: 'video' },
+    rigging: { mount: 'flown', points: null, pointCapacityKg: null },
     routing: {
       layer: 'data',
       priority: 'vertical',
@@ -410,6 +412,11 @@ function ScreenEditor({ initial, eventDanger, exportError, onScreenChange }: Scr
             results={results}
             demand={demand}
             operating={draft.operating}
+          />
+          <RiggingPanel
+            rigging={draft.rigging}
+            cabinet={draft.cabinetChoice.cabinet}
+            results={results}
           />
         </div>
       </section>

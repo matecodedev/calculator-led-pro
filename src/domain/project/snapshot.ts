@@ -10,6 +10,7 @@
 
 import type { Cabinet, Processor } from '../catalog';
 import { CONTENT_LEVELS, type ContentLevel } from '../electrical/load';
+import type { MountMode } from '../rigging/load';
 import type { CableLayer } from '../routing/palette';
 import {
   MAINS_POLICIES,
@@ -58,6 +59,12 @@ export interface ScreenSnapshot {
    * answers what to ask the venue for, not what breaker to fit.
    */
   operating: { brightness: number; content: ContentLevel };
+  /**
+   * How the screen hangs or stands. Points and capacity stay null until the
+   * technician declares them: the app reports the load either way and refuses
+   * to invent a rig it was not told about.
+   */
+  rigging: { mount: MountMode; points: number | null; pointCapacityKg: number | null };
   routing: {
     layer: CableLayer;
     priority: RoutingPriority;
@@ -209,6 +216,22 @@ function parseScreen(
       : 1;
   const content = isOneOf(operating.content, CONTENT_LEVELS) ? operating.content : 'video';
 
+  // Documents written before rigging existed describe a screen, not a rig.
+  const riggingRaw = isRecord(value.rigging) ? value.rigging : {};
+  const mount = isOneOf(riggingRaw.mount, ['flown', 'stacked'] as const)
+    ? riggingRaw.mount
+    : 'flown';
+  const points =
+    isFiniteNumber(riggingRaw.points) &&
+    Number.isInteger(riggingRaw.points) &&
+    riggingRaw.points > 0
+      ? riggingRaw.points
+      : null;
+  const pointCapacityKg =
+    isFiniteNumber(riggingRaw.pointCapacityKg) && riggingRaw.pointCapacityKg > 0
+      ? riggingRaw.pointCapacityKg
+      : null;
+
   const manualData = parseRuns(routing.manualData);
   const manualPower = parseRuns(routing.manualPower);
   if (!manualData || !manualPower) return null;
@@ -229,6 +252,7 @@ function parseScreen(
     },
     supply: { voltage, pduCapacityAmps, breakerAmps, cableLoopAmps },
     operating: { brightness, content },
+    rigging: { mount, points, pointCapacityKg },
     routing: {
       layer: routing.layer,
       priority: routing.priority,

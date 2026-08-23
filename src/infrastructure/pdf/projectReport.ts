@@ -375,6 +375,46 @@ export async function renderProjectReport(report: ProjectReport): Promise<Blob> 
       columnStyles: { 1: { halign: 'right' } },
     });
 
+    const rig = plan.rigging;
+    const flown = screen.rigging.mount === 'flown';
+
+    autoTable(doc, {
+      ...tableStyles,
+      startY: finalY() + 6,
+      margin: leftCol,
+      tableWidth: colW,
+      head: [['Rigging', '']],
+      body: [
+        ['Montaje', flown ? 'Colgada' : 'Apilada en piso'],
+        ['Peso total', `${rig.totalKg.toLocaleString('es-AR')} kg`],
+        ['Columna más cargada', `${rig.heaviestColumnKg.toLocaleString('es-AR')} kg`],
+        ...(flown
+          ? [
+              [
+                'Puntos de izaje',
+                screen.rigging.points === null ? 'Sin declarar' : `${screen.rigging.points}`,
+              ],
+              [
+                'Por punto',
+                rig.perPointKg === null
+                  ? 'Sin declarar'
+                  : `${rig.perPointKg.toLocaleString('es-AR', { maximumFractionDigits: 1 })} kg`,
+              ],
+            ]
+          : [
+              [
+                'Sobre el gabinete inferior',
+                `${rig.onBottomCabinetKg.toLocaleString('es-AR', { maximumFractionDigits: 1 })} kg`,
+              ],
+            ]),
+        [
+          flown ? 'Carga admisible por punto' : 'Límite del gabinete',
+          rig.pointCapacityKg === null ? 'Sin declarar' : `${rig.pointCapacityKg} kg`,
+        ],
+      ],
+      columnStyles: { 1: { halign: 'right' } },
+    });
+
     autoTable(doc, {
       ...tableStyles,
       startY: sy,

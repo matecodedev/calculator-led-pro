@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 
+import type { MountMode } from '../../domain/rigging/load';
 import {
   calculateProject,
   validateProject,
@@ -58,6 +59,14 @@ export function useProjectDraft(initial?: ScreenSnapshot | null) {
   // describes, so nothing is assumed until the technician says otherwise.
   const [brightness, setBrightness] = useState(initial?.operating.brightness ?? 1);
   const [content, setContent] = useState<ContentLevel>(initial?.operating.content ?? 'video');
+
+  // How it hangs. Nothing is assumed: the load shows either way, the split
+  // across points only once the technician says how many there are.
+  const [mount, setMount] = useState<MountMode>(initial?.rigging.mount ?? 'flown');
+  const [points, setPoints] = useState<number | null>(initial?.rigging.points ?? null);
+  const [pointCapacityKg, setPointCapacityKg] = useState<number | null>(
+    initial?.rigging.pointCapacityKg ?? null,
+  );
 
   const [calcMode, setCalcMode] = useState<CalcMode>(initial?.target.calcMode ?? 'dimensions');
   const [targetWidthM, setTargetWidthM] = useState(initial?.target.targetWidthM ?? 4);
@@ -181,6 +190,7 @@ export function useProjectDraft(initial?: ScreenSnapshot | null) {
       setCableLoopAmps,
     },
     operating: { brightness, setBrightness, content, setContent },
+    rigging: { mount, setMount, points, setPoints, pointCapacityKg, setPointCapacityKg },
     /** This hook's share of the saved document. */
     snapshotSlice: {
       name: screenName,
@@ -197,6 +207,7 @@ export function useProjectDraft(initial?: ScreenSnapshot | null) {
       },
       supply: { voltage, pduCapacityAmps, breakerAmps, cableLoopAmps },
       operating: { brightness, content },
+      rigging: { mount, points, pointCapacityKg },
     },
     input,
     issues,
@@ -210,4 +221,5 @@ export type ProcessorChoice = ProjectDraft['processorChoice'];
 export type TargetControls = ProjectDraft['target'];
 export type SupplyControls = ProjectDraft['supply'];
 export type OperatingControls = ProjectDraft['operating'];
+export type RiggingControls = ProjectDraft['rigging'];
 export type ProjectIdentity = ProjectDraft['identity'];
