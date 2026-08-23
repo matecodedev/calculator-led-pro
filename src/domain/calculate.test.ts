@@ -115,7 +115,7 @@ describe('validateProject', () => {
     });
 
     expect(issues).toHaveLength(1);
-    expect(issues[0].message).toMatch(/cabinets/i);
+    expect(issues[0].message).toMatch(/gabinetes/i);
   });
 
   it('never reports an issue for a project calculateProject would accept', () => {

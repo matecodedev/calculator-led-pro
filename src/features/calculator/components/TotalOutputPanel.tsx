@@ -18,24 +18,24 @@ function Row({ label, value }: { label: string; value: string }) {
 export default function TotalOutputPanel({ results }: TotalOutputPanelProps) {
   return (
     <div className="p-6 bg-[#0A0A0A] border-t border-[#333] flex-1">
-      <SectionHeading accent="blue">Total Output</SectionHeading>
+      <SectionHeading accent="blue">Resultado total</SectionHeading>
 
       {results ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-3">
             <Row
-              label="Total Cabinets"
+              label="Gabinetes totales"
               value={`${results.cols} × ${results.rows} = ${results.totalCabinets}`}
             />
             <Row
-              label="Physical Size"
+              label="Medida física"
               value={`${results.arrayWidthM.toFixed(2)}m × ${results.arrayHeightM.toFixed(2)}m`}
             />
-            <Row label="Total Weight" value={`${results.weightTotal.toLocaleString()} kg`} />
+            <Row label="Peso total" value={`${results.weightTotal.toLocaleString()} kg`} />
           </div>
           <div className="bg-[#111] border border-[#333] p-4 flex flex-col justify-center items-center text-center">
             <div className="text-[11px] uppercase tracking-wide text-neutral-400 mb-2">
-              Total Resolution
+              Resolución total
             </div>
             <div className="text-xl sm:text-2xl font-mono tabular-nums tracking-tighter text-white">
               {results.resX.toLocaleString()}
@@ -44,7 +44,7 @@ export default function TotalOutputPanel({ results }: TotalOutputPanelProps) {
               × {results.resY.toLocaleString()} px
             </div>
             <div className="mt-2 text-[11px] uppercase tracking-wide text-neutral-400">
-              Pixels: {results.totalPixels.toLocaleString()}
+              Píxeles: {results.totalPixels.toLocaleString()}
             </div>
           </div>
         </div>

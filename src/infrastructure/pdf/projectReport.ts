@@ -80,14 +80,14 @@ export async function renderProjectReport(report: ProjectReport): Promise<Blob> 
 
   doc.setFontSize(12);
   doc.setTextColor(100);
-  doc.text('Configuration Report', PAGE_LEFT, 30);
+  doc.text('Reporte de configuración', PAGE_LEFT, 30);
 
   doc.setFontSize(10);
   let yPos = 36;
   for (const line of [
-    report.eventName && `Event: ${report.eventName}`,
-    report.screenName && `Screen: ${report.screenName}`,
-    `Date: ${new Date().toLocaleDateString()}`,
+    report.eventName && `Evento: ${report.eventName}`,
+    report.screenName && `Pantalla: ${report.screenName}`,
+    `Fecha: ${new Date().toLocaleDateString('es-AR')}`,
   ]) {
     if (!line) continue;
     doc.text(line, PAGE_LEFT, yPos);
@@ -96,55 +96,55 @@ export async function renderProjectReport(report: ProjectReport): Promise<Blob> 
 
   autoTable(doc, {
     startY: yPos,
-    head: [['Dimensions & Cabinet', 'Value']],
+    head: [['Medidas y gabinete', 'Valor']],
     body: [
-      ['Screen Width', `${calc.arrayWidthM.toFixed(2)} m`],
-      ['Screen Height', `${calc.arrayHeightM.toFixed(2)} m`],
-      ['Grid (Cols x Rows)', `${calc.cols} x ${calc.rows}`],
-      ['Total Cabinets', `${calc.totalCabinets} units`],
-      ['Total Module Weight', `${calc.weightTotal.toLocaleString()} kg`],
-      ['Total Resolution', `${calc.resX} x ${calc.resY} px`],
-      ['Total Pixels', `${calc.totalPixels.toLocaleString()} px`],
+      ['Ancho de pantalla', `${calc.arrayWidthM.toFixed(2)} m`],
+      ['Alto de pantalla', `${calc.arrayHeightM.toFixed(2)} m`],
+      ['Grilla (col x fila)', `${calc.cols} x ${calc.rows}`],
+      ['Gabinetes totales', `${calc.totalCabinets} unid.`],
+      ['Peso total', `${calc.weightTotal.toLocaleString()} kg`],
+      ['Resolución total', `${calc.resX} x ${calc.resY} px`],
+      ['Píxeles totales', `${calc.totalPixels.toLocaleString()} px`],
     ],
     theme: 'grid',
     headStyles: { fillColor: [20, 20, 20] },
   });
 
   autoTable(doc, {
-    head: [['Cabinet Specs', 'Value']],
+    head: [['Ficha del gabinete', 'Valor']],
     body: [
-      ['Make & Model', `${cabinet.brand} ${cabinet.model}`],
-      ['Pixel Pitch', `${cabinet.pitch} mm`],
-      ['Module Dimensions', `${cabinet.width} x ${cabinet.height} mm`],
-      ['Max Power (W/Cab)', `${cabinet.maxPower} W`],
+      ['Marca y modelo', `${cabinet.brand} ${cabinet.model}`],
+      ['Pitch', `${cabinet.pitch} mm`],
+      ['Medidas del módulo', `${cabinet.width} x ${cabinet.height} mm`],
+      ['Potencia máx. (W/gab)', `${cabinet.maxPower} W`],
     ],
     theme: 'grid',
     headStyles: { fillColor: [20, 20, 20] },
   });
 
   autoTable(doc, {
-    head: [['Data & Processing', 'Value']],
+    head: [['Data y procesamiento', 'Valor']],
     body: [
-      ['Processor Model', `${processor.brand} ${processor.model}`],
-      ['Total Units Needed', `${report.demand.processorsNeeded}`],
-      ['Main Data Cables Needed', `${report.demand.dataCables}`],
-      ['Cabinets per Data Loop', `${calc.cabinetsPerDataPort}`],
+      ['Procesador', `${processor.brand} ${processor.model}`],
+      ['Procesadores necesarios', `${report.demand.processorsNeeded}`],
+      ['Cables de data necesarios', `${report.demand.dataCables}`],
+      ['Gabinetes por loop de data', `${calc.cabinetsPerDataPort}`],
     ],
     theme: 'grid',
     headStyles: { fillColor: [142, 68, 173] },
   });
 
   autoTable(doc, {
-    head: [['Electrical Infrastructure', 'Value']],
+    head: [['Infraestructura eléctrica', 'Valor']],
     body: [
-      ['Voltage System', `${report.voltage} V`],
-      ['Main PDU / Breakout', `${report.pduCapacityAmps} A`],
-      ['Breaker Limit per line', `${report.breakerAmps} A`],
-      ['PowerCON Max Load', `${report.cableLoopAmps} A`],
-      ['Total Peak Power', `${(calc.maxPowerW / 1000).toFixed(2)} kW`],
-      ['Total Peak Current', `${calc.maxAmps.toFixed(2)} A`],
-      ['Main Power Cables Needed', `${report.demand.powerCables}`],
-      ['Max Cabinets per Power Cable', `${calc.cabinetsPerPowerCable}`],
+      ['Tensión de red', `${report.voltage} V`],
+      ['PDU principal', `${report.pduCapacityAmps} A`],
+      ['Térmico por línea', `${report.breakerAmps} A`],
+      ['Carga máx. powerCON', `${report.cableLoopAmps} A`],
+      ['Potencia pico total', `${(calc.maxPowerW / 1000).toFixed(2)} kW`],
+      ['Corriente pico total', `${calc.maxAmps.toFixed(2)} A`],
+      ['Cables de power necesarios', `${report.demand.powerCables}`],
+      ['Gabinetes máx. por cable', `${calc.cabinetsPerPowerCable}`],
     ],
     theme: 'grid',
     headStyles: { fillColor: [231, 76, 60] },
@@ -155,7 +155,7 @@ export async function renderProjectReport(report: ProjectReport): Promise<Blob> 
     doc.setTextColor(255, 0, 0);
     doc.setFont('helvetica', 'bold');
     doc.text(
-      'WARNING: Total Peak Current exceeds Main PDU Capacity!',
+      'ATENCIÓN: la corriente pico supera la capacidad del PDU principal.',
       PAGE_LEFT,
       (lastTable?.finalY ?? yPos) + 10,
     );
@@ -279,14 +279,14 @@ export async function renderProjectReport(report: ProjectReport): Promise<Blob> 
 
   doc.addPage();
   const afterData = drawSchematic(
-    `Data Routing Schematic (${calc.cabinetsPerDataPort} cab/line max)`,
+    `Esquemático de ruteo DATA (máx ${calc.cabinetsPerDataPort} gab/línea)`,
     report.dataRoutes,
     DATA_CABLE_COLORS,
     calc.cabinetsPerDataPort,
     20,
   );
   drawSchematic(
-    `Power Routing Schematic (${calc.cabinetsPerPowerCable} cab/line max)`,
+    `Esquemático de ruteo POWER (máx ${calc.cabinetsPerPowerCable} gab/línea)`,
     report.powerRoutes,
     POWER_CABLE_COLORS,
     calc.cabinetsPerPowerCable,

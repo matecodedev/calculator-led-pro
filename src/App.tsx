@@ -30,7 +30,7 @@ export default function App() {
             aria-hidden="true"
           />
           <span className="text-[11px] uppercase tracking-widest text-neutral-300">
-            {online ? 'Online' : 'Offline'}
+            {online ? 'En línea' : 'Sin conexión'}
           </span>
         </div>
       </nav>
@@ -40,7 +40,7 @@ export default function App() {
         <aside className="hidden sm:flex w-56 border-r border-[#333] bg-[#121212] flex-col shrink-0 overflow-y-auto">
           <div className="p-4 space-y-4">
             <div className="text-[10px] uppercase tracking-widest text-[#CCFF00] font-bold">
-              Main Modules
+              Módulos
             </div>
             <button
               onClick={() => setActiveTab('calculator')}
@@ -51,7 +51,7 @@ export default function App() {
               }`}
             >
               <Calculator className="w-4 h-4" />
-              <span>CALCULATORS</span>
+              <span>CALCULADORA</span>
             </button>
             <button
               onClick={() => setActiveTab('library')}
@@ -62,7 +62,7 @@ export default function App() {
               }`}
             >
               <LibraryIcon className="w-4 h-4" />
-              <span>CABINET LIB</span>
+              <span>GABINETES</span>
             </button>
             <button
               onClick={() => setActiveTab('guides')}
@@ -73,7 +73,7 @@ export default function App() {
               }`}
             >
               <Wrench className="w-4 h-4" />
-              <span>TROUBLESHOOT</span>
+              <span>FALLAS</span>
             </button>
           </div>
         </aside>
@@ -111,7 +111,7 @@ export default function App() {
             }`}
           >
             <LibraryIcon className="w-5 h-5" />
-            <span className="text-[9px] font-bold tracking-widest uppercase">Lib</span>
+            <span className="text-[9px] font-bold tracking-widest uppercase">Gabinetes</span>
           </button>
           <button
             onClick={() => setActiveTab('guides')}
@@ -122,7 +122,7 @@ export default function App() {
             }`}
           >
             <Wrench className="w-5 h-5" />
-            <span className="text-[9px] font-bold tracking-widest uppercase">Guides</span>
+            <span className="text-[9px] font-bold tracking-widest uppercase">Fallas</span>
           </button>
         </div>
       </nav>

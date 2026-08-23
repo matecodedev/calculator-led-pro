@@ -30,19 +30,19 @@ describe('validateCabinet', () => {
   });
 
   it.each([
-    ['width', 'Width'],
-    ['height', 'Height'],
-    ['resX', 'Horizontal resolution'],
-    ['resY', 'Vertical resolution'],
-    ['maxPower', 'Max power'],
-    ['pitch', 'Pixel pitch'],
-    ['weight', 'Weight'],
+    ['width', 'ancho'],
+    ['height', 'alto'],
+    ['resX', 'resolución horizontal'],
+    ['resY', 'resolución vertical'],
+    ['maxPower', 'potencia máxima'],
+    ['pitch', 'pitch'],
+    ['weight', 'peso'],
   ] as const)('reports %s when it is zero', (field, label) => {
     const issues = validateCabinet({ ...cabinet, [field]: 0 });
 
     expect(issues).toHaveLength(1);
     expect(issues[0].field).toBe(field);
-    expect(issues[0].message).toContain(label);
+    expect(issues[0].message.toLowerCase()).toContain(label);
   });
 
   it('reports a negative value', () => {
@@ -100,6 +100,6 @@ describe('validateTarget', () => {
     const issues = validateTarget({ mode: 'count', cols: 400, rows: 400 });
 
     expect(issues).toHaveLength(1);
-    expect(issues[0].message).toMatch(/cabinets/i);
+    expect(issues[0].message).toMatch(/gabinetes/i);
   });
 });

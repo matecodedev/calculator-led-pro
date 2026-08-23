@@ -38,22 +38,22 @@ import { useRoutingPlan, type ResizeNotice } from './useRoutingPlan';
 /** How long to wait after the last edit before writing to storage. */
 const AUTOSAVE_DELAY_MS = 500;
 
-const cabinetWord = (count: number) => (count === 1 ? 'cabinet' : 'cabinets');
+const cabinetWord = (count: number) => (count === 1 ? 'gabinete' : 'gabinetes');
 
 /** `8x5` reads as a grid, not as a multiplication the technician typed. */
 const describeGrid = (signature: string) => signature.replace('x', ' × ');
 
 function resizeNoticeMessage(notice: NonNullable<ResizeNotice>): string {
   if (notice.kind === 'restored') {
-    return `${notice.count} hand-drawn ${cabinetWord(notice.count)} restored from the last time this screen was this size.`;
+    return `Se recuperaron ${notice.count} ${cabinetWord(notice.count)} dibujados a mano de la última vez que esta pantalla tuvo esta medida.`;
   }
   // Naming the grid rather than the field is deliberate: in dimensions mode the
   // technician typed metres, so "go back to what you typed" would be a lie.
-  return `The screen changed size, so ${notice.count} hand-drawn ${cabinetWord(
+  return `La pantalla cambió de medida, así que ${notice.count} ${cabinetWord(
     notice.count,
-  )} no longer exist and were removed from the routing. Set the screen back to ${describeGrid(
+  )} dibujados a mano ya no existen y se quitaron del ruteo. Volvé la pantalla a ${describeGrid(
     notice.restoreGrid,
-  )} cabinets and the drawing returns.`;
+  )} gabinetes y el dibujo vuelve.`;
 }
 
 /**
@@ -176,7 +176,7 @@ export default function CalculatorScreen() {
 
   const toSnapshot = (): EventSnapshot => ({ ...event, savedAt: new Date().toISOString() });
   const saveName = describeSnapshot(toSnapshot());
-  const isNamed = saveName !== 'Untitled event';
+  const isNamed = saveName !== 'Evento sin nombre';
 
   /** Replaces the screen being edited with whatever the editor now holds. */
   const updateActiveScreen = (screen: ScreenSnapshot) =>
@@ -233,8 +233,8 @@ export default function CalculatorScreen() {
   // can see: each one passes its own PDU and the sum still trips the building.
   const eventDanger: DangerAlert | null = summary.overCapacity
     ? {
-        headline: 'Event over the venue feed',
-        detail: `The ${summary.screens.length} screens draw ${summary.totalMaxAmps.toFixed(1)} A together, and the declared feed is ${summary.capacityAmps} A. Every screen can fit its own supply while the show does not fit the building.`,
+        headline: 'El evento se pasa de la acometida',
+        detail: `Las ${summary.screens.length} pantallas consumen ${summary.totalMaxAmps.toFixed(1)} A entre todas y la acometida declarada es de ${summary.capacityAmps} A. Cada pantalla puede entrar en su propia alimentación y aun así el show no entrar en el edificio.`,
       }
     : null;
 
@@ -324,8 +324,8 @@ function ScreenEditor({ initial, eventName, eventDanger, onScreenChange }: Scree
   const danger: DangerAlert | null =
     results && results.maxAmps > draft.supply.pduCapacityAmps
       ? {
-          headline: 'Over supply capacity',
-          detail: `This screen draws ${results.maxAmps.toFixed(1)} A at ${draft.supply.voltage} V, but the supply provides ${draft.supply.pduCapacityAmps} A. Reduce the screen, split it across supplies, or get a bigger feed.`,
+          headline: 'Se pasa de la alimentación',
+          detail: `Esta pantalla consume ${results.maxAmps.toFixed(1)} A a ${draft.supply.voltage} V y la alimentación entrega ${draft.supply.pduCapacityAmps} A. Hay que achicar la pantalla, repartirla entre varias fuentes o conseguir una acometida mayor.`,
         }
       : null;
 
@@ -350,7 +350,7 @@ function ScreenEditor({ initial, eventName, eventDanger, onScreenChange }: Scree
       setExportError(null);
     } catch (error) {
       console.error('PDF export failed', error);
-      setExportError('The PDF report could not be generated. Please try again.');
+      setExportError('No se pudo generar el PDF. Intentá de nuevo.');
     }
   };
 
@@ -362,7 +362,7 @@ function ScreenEditor({ initial, eventName, eventDanger, onScreenChange }: Scree
     <div>
       <div className="p-4 bg-[#111] border-b border-[#333] justify-between items-center sticky top-0 z-10 hidden sm:flex">
         <h2 className="text-xs font-bold tracking-widest uppercase text-white">
-          Active Configuration Project
+          Configuración de la pantalla
         </h2>
         <button
           type="button"
@@ -371,7 +371,7 @@ function ScreenEditor({ initial, eventName, eventDanger, onScreenChange }: Scree
           className={`${exportButtonClass} px-4 py-2 text-[11px] shadow-lg`}
         >
           <Download className="w-3.5 h-3.5" aria-hidden="true" />
-          Export PDF Report
+          Exportar PDF
         </button>
       </div>
       <div className="p-4 bg-[#111] border-b border-[#333] sm:hidden">
@@ -382,7 +382,7 @@ function ScreenEditor({ initial, eventName, eventDanger, onScreenChange }: Scree
           className={`${exportButtonClass} w-full px-4 py-3 text-[11px]`}
         >
           <Download className="w-4 h-4" aria-hidden="true" />
-          Download PDF Export
+          Descargar PDF
         </button>
       </div>
 

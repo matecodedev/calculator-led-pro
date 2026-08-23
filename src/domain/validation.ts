@@ -27,14 +27,14 @@ function checkPositive(
   unit: string,
 ): FieldIssue | null {
   if (!Number.isFinite(value) || value <= 0) {
-    return { field, message: `${label} must be greater than zero ${unit}.` };
+    return { field, message: `${label} tiene que ser mayor que cero ${unit}.` };
   }
   return null;
 }
 
 function checkWhole(value: number, field: string, label: string): FieldIssue | null {
   if (!Number.isInteger(value) || value <= 0) {
-    return { field, message: `${label} must be a whole number greater than zero.` };
+    return { field, message: `${label} tiene que ser un número entero mayor que cero.` };
   }
   return null;
 }
@@ -44,20 +44,25 @@ const collect = (...issues: (FieldIssue | null)[]): FieldIssue[] =>
 
 export function validateCabinet(cabinet: Cabinet): FieldIssue[] {
   return collect(
-    checkPositive(cabinet.width, 'width', 'Width', 'in mm'),
-    checkPositive(cabinet.height, 'height', 'Height', 'in mm'),
-    checkPositive(cabinet.resX, 'resX', 'Horizontal resolution', 'in pixels'),
-    checkPositive(cabinet.resY, 'resY', 'Vertical resolution', 'in pixels'),
-    checkPositive(cabinet.maxPower, 'maxPower', 'Max power', 'in watts'),
-    checkPositive(cabinet.pitch, 'pitch', 'Pixel pitch', 'in mm'),
-    checkPositive(cabinet.weight, 'weight', 'Weight', 'in kg'),
+    checkPositive(cabinet.width, 'width', 'El ancho del gabinete', 'en mm'),
+    checkPositive(cabinet.height, 'height', 'El alto del gabinete', 'en mm'),
+    checkPositive(cabinet.resX, 'resX', 'La resolución horizontal', 'en píxeles'),
+    checkPositive(cabinet.resY, 'resY', 'La resolución vertical', 'en píxeles'),
+    checkPositive(cabinet.maxPower, 'maxPower', 'La potencia máxima', 'en watts'),
+    checkPositive(cabinet.pitch, 'pitch', 'El pitch', 'en mm'),
+    checkPositive(cabinet.weight, 'weight', 'El peso', 'en kg'),
   );
 }
 
 export function validateProcessor(processor: Processor): FieldIssue[] {
   return collect(
-    checkWhole(processor.dataPorts, 'dataPorts', 'Output ports'),
-    checkPositive(processor.maxPixelsPerPort, 'maxPixelsPerPort', 'Pixels per port', 'in pixels'),
+    checkWhole(processor.dataPorts, 'dataPorts', 'La cantidad de puertos'),
+    checkPositive(
+      processor.maxPixelsPerPort,
+      'maxPixelsPerPort',
+      'Los píxeles por puerto',
+      'en píxeles',
+    ),
   );
 }
 
@@ -68,14 +73,14 @@ export type TargetScreen =
 export function validateTarget(target: TargetScreen): FieldIssue[] {
   if (target.mode === 'dimensions') {
     return collect(
-      checkPositive(target.widthM, 'widthM', 'Screen width', 'in metres'),
-      checkPositive(target.heightM, 'heightM', 'Screen height', 'in metres'),
+      checkPositive(target.widthM, 'widthM', 'El ancho de la pantalla', 'en metros'),
+      checkPositive(target.heightM, 'heightM', 'El alto de la pantalla', 'en metros'),
     );
   }
 
   const issues = collect(
-    checkWhole(target.cols, 'cols', 'Columns'),
-    checkWhole(target.rows, 'rows', 'Rows'),
+    checkWhole(target.cols, 'cols', 'La cantidad de columnas'),
+    checkWhole(target.rows, 'rows', 'La cantidad de filas'),
   );
   if (issues.length > 0) return issues;
 
@@ -83,7 +88,7 @@ export function validateTarget(target: TargetScreen): FieldIssue[] {
     return [
       {
         field: 'cols',
-        message: `This app plans up to ${MAX_CABINETS.toLocaleString()} cabinets; that grid needs ${(target.cols * target.rows).toLocaleString()}.`,
+        message: `Esta app planifica hasta ${MAX_CABINETS.toLocaleString()} gabinetes; esa grilla necesita ${(target.cols * target.rows).toLocaleString()}.`,
       },
     ];
   }

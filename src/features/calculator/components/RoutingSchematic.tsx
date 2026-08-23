@@ -88,7 +88,7 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-6 gap-4">
         <div className="flex items-center gap-3">
           <SectionHeading icon={<Route className="w-4 h-4" />} accent="blue" className="">
-            Cable Routing Schematics
+            Esquemático de ruteo
           </SectionHeading>
           <button
             type="button"
@@ -96,7 +96,7 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
             className="flex items-center gap-2 px-3 py-2 min-h-11 text-[11px] font-bold uppercase tracking-wider rounded-sm border border-[#444] text-neutral-300 hover:text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#CCFF00]"
           >
             <Maximize2 className="w-3.5 h-3.5" aria-hidden="true" />
-            Fullscreen
+            Pantalla completa
           </button>
         </div>
         <RoutingToolbar
@@ -109,25 +109,25 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center gap-4 sm:gap-6 bg-[#161616] border border-[#333] p-3 text-[11px] uppercase font-mono">
             <div className="font-bold text-[#CCFF00]">
-              Legend ({routedCabinets}/{cols * rows})
+              Referencias ({routedCabinets}/{cols * rows})
             </div>
             <div className="flex items-center gap-2">
               <span
                 className="w-3 h-3 rounded-full bg-[#1A1A1A] border-2 border-current"
                 style={{ color: colors[0] }}
               />
-              <span>Cable Line Start</span>
+              <span>Inicio del cable</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-3 rounded-[1px] bg-current h-1" style={{ color: colors[0] }} />
-              <span>Link (max {capacity} cab)</span>
+              <span>Enlace (máx {capacity} gab)</span>
             </div>
             <div className="flex items-center gap-2">
               <span
                 className="w-0.5 h-3 rounded-[1px] bg-current opacity-60"
                 style={{ color: colors[0] }}
               />
-              <span>Main (drops to the floor)</span>
+              <span>Main (baja al piso)</span>
             </div>
             {overCapacityRuns > 0 && (
               <div className="flex items-center gap-2 font-bold text-[#ef4444]">
@@ -138,12 +138,14 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
                       'repeating-linear-gradient(to right, currentColor 0 3px, transparent 3px 5px)',
                   }}
                 />
-                <span>{overCapacityRuns} over capacity (dashed, labelled)</span>
+                <span>
+                  {overCapacityRuns} sobrecargado{overCapacityRuns > 1 ? 's' : ''} (punteado)
+                </span>
               </div>
             )}
             <div className="flex items-center gap-4 sm:border-l sm:border-[#333] sm:pl-4 mt-2 sm:mt-0 text-neutral-400">
-              <span>Total cables: {runs.length}</span>
-              <span>Total cabs: {cols * rows}</span>
+              <span>Cables: {runs.length}</span>
+              <span>Gabinetes: {cols * rows}</span>
             </div>
           </div>
 
@@ -161,7 +163,7 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
                 className="absolute top-4 right-4 z-10 flex items-center gap-2 px-3 py-2 min-h-11 text-[11px] font-bold uppercase tracking-wider rounded-sm border border-[#444] bg-[#111] text-neutral-200 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#CCFF00]"
               >
                 <Minimize2 className="w-3.5 h-3.5" aria-hidden="true" />
-                Close
+                Cerrar
               </button>
             )}
             <svg
@@ -177,9 +179,9 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
               }
               role="img"
               aria-label={
-                `${plan.layer} routing over a ${cols} by ${rows} cabinet grid, ${runs.length} cables` +
+                `Ruteo de ${plan.layer === 'data' ? 'data' : 'power'} sobre una grilla de ${cols} por ${rows} gabinetes, ${runs.length} cables` +
                 (overCapacityRuns > 0
-                  ? `, ${overCapacityRuns} over the ${capacity} cabinet limit`
+                  ? `, ${overCapacityRuns} por encima del límite de ${capacity} gabinetes`
                   : '')
               }
             >

@@ -9,14 +9,14 @@ import type { ProjectIdentity } from '../useProjectDraft';
 export default function ProjectIdentityPanel({ screenName, setScreenName }: ProjectIdentity) {
   return (
     <section className="p-4 sm:p-6 bg-[#161616] border-b border-[#333]">
-      <Field label="Screen Name" className="flex-1">
+      <Field label="Nombre de la pantalla" className="flex-1">
         {(id) => (
           <input
             id={id}
             type="text"
             name="screen-name"
             autoComplete="off"
-            placeholder="e.g. Main Stage / Lateral L / Totem 1"
+            placeholder="ej. Main / Lateral izq. / Tótem 1"
             value={screenName}
             onChange={(e) => setScreenName(e.target.value)}
             className={textControlClass}

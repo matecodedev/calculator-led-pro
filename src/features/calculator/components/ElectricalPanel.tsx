@@ -50,10 +50,10 @@ interface ElectricalPanelProps {
 }
 
 const CONTENT_LABELS: Record<ContentLevel, string> = {
-  dark: 'Dark video / low key',
-  video: 'Typical video',
-  bright: 'Bright graphics / logos',
-  white: 'Full white',
+  dark: 'Video oscuro / low key',
+  video: 'Video típico',
+  bright: 'Gráfica brillante / logos',
+  white: 'Blanco pleno',
 };
 
 export default function ElectricalPanel({
@@ -69,10 +69,10 @@ export default function ElectricalPanel({
 
   return (
     <div className="p-6 bg-[#111]">
-      <SectionHeading accent="red">Electrical Infrastructure</SectionHeading>
+      <SectionHeading accent="red">Infraestructura eléctrica</SectionHeading>
 
       <div className="space-y-4">
-        <Field label="Mains Voltage">
+        <Field label="Tensión de red">
           {(id) => (
             <select
               id={id}
@@ -90,7 +90,7 @@ export default function ElectricalPanel({
         </Field>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Field label="Supply / Main PDU">
+          <Field label="Alimentación / PDU principal">
             {(id) => (
               <select
                 id={id}
@@ -106,7 +106,7 @@ export default function ElectricalPanel({
               </select>
             )}
           </Field>
-          <Field label="Breaker limit">
+          <Field label="Térmico por línea">
             {(id) => (
               <select
                 id={id}
@@ -122,7 +122,7 @@ export default function ElectricalPanel({
               </select>
             )}
           </Field>
-          <Field label="PowerCON max load">
+          <Field label="Carga máx. powerCON">
             {(id) => (
               <select
                 id={id}
@@ -147,7 +147,7 @@ export default function ElectricalPanel({
          * the first white frame.
          */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label={`Brightness · ${Math.round(operating.brightness * 100)}%`}>
+          <Field label={`Brillo · ${Math.round(operating.brightness * 100)}%`}>
             {(id) => (
               <input
                 id={id}
@@ -162,7 +162,7 @@ export default function ElectricalPanel({
             )}
           </Field>
 
-          <Field label="Content">
+          <Field label="Contenido">
             {(id) => (
               <select
                 id={id}
@@ -183,21 +183,21 @@ export default function ElectricalPanel({
         {results ? (
           <div className="grid grid-cols-2 gap-4 mt-2">
             <StatTile
-              label="Main Power Cables Req."
+              label="Cables de power necesarios"
               value={demand.powerCables}
               tone="power"
               className="bg-black border-[#333]"
               footnote={
                 <span className="flex justify-between gap-2">
-                  <span>Max {results.cabinetsPerPowerCable} cabs/cable</span>
+                  <span>Máx {results.cabinetsPerPowerCable} gab/cable</span>
                   <span>
-                    {results.ampsPerLine.toFixed(1)} A usable ({supply.breakerAmps} A × 80%)
+                    {results.ampsPerLine.toFixed(1)} A utilizables ({supply.breakerAmps} A × 80%)
                   </span>
                 </span>
               }
             />
             <StatTile
-              label="Total Load / Peak Amp"
+              label="Consumo total / pico"
               tone={overCapacity ? 'alert' : 'safe'}
               className={`bg-black ${overCapacity ? 'border-[#FF4444]' : 'border-[#2F5D1F]'}`}
               value={
@@ -210,14 +210,14 @@ export default function ElectricalPanel({
               }
               footnote={
                 <>
-                  <span>Max power: {(results.maxPowerW / 1000).toFixed(1)} kW</span>
+                  <span>Potencia pico: {(results.maxPowerW / 1000).toFixed(1)} kW</span>
                   {overCapacity ? (
                     <span className="block text-[#FF4444] font-bold uppercase mt-2 border-t border-[#FF4444] pt-2">
-                      Over capacity by {(results.maxAmps - supply.pduCapacityAmps).toFixed(1)} A
+                      Se pasa por {(results.maxAmps - supply.pduCapacityAmps).toFixed(1)} A
                     </span>
                   ) : (
                     <span className="block text-[#CCFF00] font-bold uppercase mt-2 border-t border-[#2F5D1F] pt-2">
-                      Within capacity · {headroomPercent}% headroom
+                      Dentro de capacidad · {headroomPercent}% de margen
                     </span>
                   )}
                 </>
@@ -231,7 +231,7 @@ export default function ElectricalPanel({
         {results && (
           <div className="border border-[#333] bg-[#0F0F0F] p-3 font-mono text-[11px] uppercase">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <span className="text-neutral-400">Expected draw as run</span>
+              <span className="text-neutral-400">Consumo esperado en uso</span>
               <span className="font-bold text-[#7FD4E8]">{results.expectedAmps.toFixed(1)} A</span>
               <span className="text-neutral-500">
                 {(results.expectedPowerW / 1000).toFixed(1)} kW ·{' '}
@@ -239,10 +239,11 @@ export default function ElectricalPanel({
               </span>
             </div>
             <p className="mt-2 border-t border-[#333] pt-2 text-neutral-500 normal-case">
-              Ask the venue or the generator for this. Breakers, cables and cabinets per circuit are
-              sized on the {results.maxAmps.toFixed(1)} A peak above, because a white frame draws
-              it. Excludes the fixed overhead that does not dim — receiving cards, fans, driver
-              idle.
+              Esta es la cifra para pedirle potencia al venue o al grupo electrógeno. Los térmicos,
+              los cables y los gabinetes por circuito se siguen calculando sobre el pico de{' '}
+              {results.maxAmps.toFixed(1)} A de arriba, porque un frame blanco lo consume. No
+              incluye el consumo fijo que no atenúa: receiving cards, ventiladores y reposo de los
+              drivers.
             </p>
           </div>
         )}

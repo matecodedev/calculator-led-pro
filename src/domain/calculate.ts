@@ -114,7 +114,7 @@ export function validateProject({ target, cabinet, processor }: ProjectInput): F
     return [
       {
         field: target.mode === 'count' ? 'cols' : 'widthM',
-        message: `This app plans up to ${MAX_CABINETS.toLocaleString()} cabinets; that screen needs ${(cols * rows).toLocaleString()}.`,
+        message: `Esta app planifica hasta ${MAX_CABINETS.toLocaleString()} gabinetes; esa pantalla necesita ${(cols * rows).toLocaleString()}.`,
       },
     ];
   }

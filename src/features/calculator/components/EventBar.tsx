@@ -27,7 +27,7 @@ const actionClass = `flex items-center gap-2 px-3 py-2 min-h-11 text-[11px] font
 
 /** "Main Stage" or, before it is named, its position in the event. */
 const screenLabel = (screen: ScreenSnapshot, index: number) =>
-  screen.name.trim() || `Screen ${index + 1}`;
+  screen.name.trim() || `Pantalla ${index + 1}`;
 
 export default function EventBar({
   eventName,
@@ -47,14 +47,14 @@ export default function EventBar({
   return (
     <section className="bg-[#161616] border-b border-[#333]">
       <div className="p-4 sm:p-6 flex flex-col sm:flex-row gap-4">
-        <Field label="Event Name" className="flex-1">
+        <Field label="Nombre del evento" className="flex-1">
           {(id) => (
             <input
               id={id}
               type="text"
               name="event-name"
               autoComplete="off"
-              placeholder="e.g. Lollapalooza 2026"
+              placeholder="ej. Lollapalooza 2026"
               value={eventName}
               onChange={(e) => onEventNameChange(e.target.value)}
               className={textControlClass}
@@ -62,7 +62,7 @@ export default function EventBar({
           )}
         </Field>
 
-        <Field label="Venue Feed (A)" className="sm:w-48">
+        <Field label="Acometida del venue (A)" className="sm:w-48">
           {(id) => (
             <input
               id={id}
@@ -71,7 +71,7 @@ export default function EventBar({
               inputMode="numeric"
               name="venue-feed"
               autoComplete="off"
-              placeholder="Not declared"
+              placeholder="Sin declarar"
               value={mainsCapacityAmps ?? ''}
               onChange={(e) => {
                 const next = Number(e.target.value);
@@ -93,29 +93,29 @@ export default function EventBar({
             overCapacity ? 'border-[#FF4444] bg-[#2A1313]' : 'border-[#333] bg-[#0F0F0F]'
           }`}
         >
-          <span className="text-neutral-400">Whole event</span>
+          <span className="text-neutral-400">Todo el evento</span>
           <span className={`font-bold ${overCapacity ? 'text-[#FF4444]' : 'text-[#CCFF00]'}`}>
             {totalMaxAmps.toFixed(1)} A
           </span>
           {capacityAmps === null ? (
-            <span className="text-neutral-500">Declare the venue feed to see whether it fits</span>
+            <span className="text-neutral-500">Declarar la acometida para saber si entra</span>
           ) : (
             <span className={overCapacity ? 'text-[#FF4444]' : 'text-neutral-400'}>
-              of {capacityAmps} A
+              de {capacityAmps} A
               {overCapacity
-                ? ' · over the feed'
-                : ` · ${(headroomPercent ?? 0).toFixed(0)}% headroom`}
+                ? ' · se pasa de la acometida'
+                : ` · ${(headroomPercent ?? 0).toFixed(0)}% de margen`}
             </span>
           )}
           <span className="text-neutral-500">
-            {summary.totalCabinets} cabs · {summary.totalWeightKg.toLocaleString()} kg ·{' '}
+            {summary.totalCabinets} gab · {summary.totalWeightKg.toLocaleString()} kg ·{' '}
             {summary.totalPowerCables} power · {summary.totalDataCables} data
           </span>
         </div>
       </div>
 
       <div className="px-4 sm:px-6 pb-4 flex flex-wrap items-end gap-3">
-        <Field label="Screen" className="min-w-[12rem] flex-1 sm:flex-none">
+        <Field label="Pantalla" className="min-w-[12rem] flex-1 sm:flex-none">
           {(id) => (
             <select
               id={id}
@@ -138,17 +138,17 @@ export default function EventBar({
           className={`${actionClass} bg-[#1A1A1A] text-neutral-200 hover:text-white border-[#444]`}
         >
           <Plus className="w-3.5 h-3.5" aria-hidden="true" />
-          New screen
+          Nueva pantalla
         </button>
 
         <button
           type="button"
           onClick={onDuplicateScreen}
-          title="Copy this screen's cabinet, supply and routing into a new one"
+          title="Copia gabinete, alimentación y ruteo de esta pantalla en una nueva"
           className={`${actionClass} bg-[#1A1A1A] text-neutral-200 hover:text-white border-[#444]`}
         >
           <Copy className="w-3.5 h-3.5" aria-hidden="true" />
-          Duplicate
+          Duplicar
         </button>
 
         <button
@@ -157,18 +157,18 @@ export default function EventBar({
           disabled={screens.length <= 1}
           title={
             screens.length <= 1
-              ? 'An event keeps at least one screen'
-              : 'Remove this screen from the event'
+              ? 'Un evento conserva al menos una pantalla'
+              : 'Quitar esta pantalla del evento'
           }
           className={`${actionClass} bg-[#1A1A1A] text-[#FF4444] hover:text-[#ff6b6b] border-[#442222]`}
         >
           <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-          Remove
+          Quitar
         </button>
 
         <span className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-neutral-500 ml-auto">
           <Layers className="w-3.5 h-3.5" aria-hidden="true" />
-          {screens.length} {screens.length === 1 ? 'screen' : 'screens'}
+          {screens.length} {screens.length === 1 ? 'pantalla' : 'pantallas'}
         </span>
       </div>
     </section>

@@ -8,17 +8,17 @@ export default function TroubleshootingScreen() {
   return (
     <div className="p-6 animate-in fade-in duration-300">
       <h2 className="text-xs font-bold tracking-widest uppercase mb-6 text-blue-400">
-        Quick Field Guide & Troubleshooting
+        Guía rápida de campo y fallas
       </h2>
 
       <div className="p-3 bg-[#111] border-l-2 border-[#FF4444] mb-6 flex items-start space-x-3">
         <span className="text-[#FF4444] font-bold mt-0.5">!</span>
         <div className="text-[11px]">
-          <div className="font-bold uppercase text-[#FF4444]">Field Warning</div>
+          <div className="font-bold uppercase text-[#FF4444]">Advertencia de campo</div>
           <div className="opacity-80 text-[#E0E0E0] mt-1 pr-2">
-            If you cannot resolve the issue by power-cycling the panel or resending the RCFG
-            calibration file, always verify processor output ports and physical CAT connections
-            before opening cabinet hardware.
+            Si el problema no se resuelve cortando y reponiendo la alimentación del panel o
+            reenviando el archivo de calibración RCFG, verificar siempre los puertos de salida del
+            procesador y las conexiones CAT físicas antes de abrir el gabinete.
           </div>
         </div>
       </div>
@@ -53,7 +53,7 @@ export default function TroubleshootingScreen() {
                   <div className="pl-6 space-y-4 border-l border-[#333] ml-1.5 pt-2">
                     <div>
                       <h4 className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5">
-                        Probable Cause
+                        Causa probable
                       </h4>
                       <p className="text-[11px] text-[#E0E0E0] font-mono leading-relaxed">
                         {guide.cause}
@@ -61,7 +61,7 @@ export default function TroubleshootingScreen() {
                     </div>
                     <div>
                       <h4 className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5">
-                        Action Plan
+                        Plan de acción
                       </h4>
                       <p className="text-[11px] text-[#CCFF00] font-mono leading-relaxed whitespace-pre-line">
                         {guide.solution}

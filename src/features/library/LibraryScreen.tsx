@@ -19,7 +19,7 @@ export default function LibraryScreen() {
         </div>
         <input
           type="text"
-          placeholder="SEARCH CABINET LIBRARY..."
+          placeholder="BUSCAR GABINETE..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full bg-[#1A1A1A] border border-[#444] rounded-sm pl-12 pr-4 py-3 text-white font-mono text-xs focus:border-[#CCFF00] focus:ring-1 focus:ring-[#CCFF00] outline-none block uppercase"
@@ -27,19 +27,19 @@ export default function LibraryScreen() {
       </div>
 
       <h2 className="text-xs font-bold tracking-widest uppercase mb-4 text-white">
-        Cabinet Specification Library
+        Biblioteca de gabinetes
       </h2>
 
       <div className="overflow-x-auto border border-[#333]">
         <table className="w-full text-left text-xs font-mono min-w-[600px]">
           <thead className="bg-[#222] text-[#CCFF00] uppercase text-[10px]">
             <tr>
-              <th className="p-3 border-r border-[#333]">Model</th>
-              <th className="p-3 border-r border-[#333]">Brand</th>
+              <th className="p-3 border-r border-[#333]">Modelo</th>
+              <th className="p-3 border-r border-[#333]">Marca</th>
               <th className="p-3 border-r border-[#333]">Res (px)</th>
-              <th className="p-3 border-r border-[#333]">Dimensions (mm)</th>
-              <th className="p-3 border-r border-[#333]">Max Pwr</th>
-              <th className="p-3">Weight</th>
+              <th className="p-3 border-r border-[#333]">Medidas (mm)</th>
+              <th className="p-3 border-r border-[#333]">Pot. máx</th>
+              <th className="p-3">Peso</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#222] text-[#E0E0E0] bg-[#0A0A0A]">
@@ -68,7 +68,7 @@ export default function LibraryScreen() {
         {filtered.length === 0 && (
           <div className="p-12 text-center text-neutral-500 bg-[#0A0A0A]">
             <Box className="w-8 h-8 mx-auto mb-3 opacity-20" />
-            <p className="text-xs uppercase tracking-widest">No matching cabinets.</p>
+            <p className="text-xs uppercase tracking-widest">Ningún gabinete coincide.</p>
           </div>
         )}
       </div>
