@@ -24,6 +24,7 @@ import {
 import { downloadBlob } from '../../shared/download';
 import { buttonFocusClass } from '../../shared/ui/controls';
 import CabinetPanel from './components/CabinetPanel';
+import CableSchedulePanel from './components/CableSchedulePanel';
 import ElectricalPanel from './components/ElectricalPanel';
 import EventBar from './components/EventBar';
 import ProcessingPanel from './components/ProcessingPanel';
@@ -98,6 +99,7 @@ function blankScreen(): ScreenSnapshot {
     supply: { voltage: 220, pduCapacityAmps: 96, breakerAmps: 16, cableLoopAmps: 16 },
     operating: { brightness: 1, content: 'video' },
     rigging: { mount: 'flown', points: null, pointCapacityKg: null },
+    install: { trimHeightM: 0, distanceToSourceM: null },
     routing: {
       layer: 'data',
       priority: 'vertical',
@@ -433,6 +435,16 @@ function ScreenEditor({ initial, eventDanger, exportError, onScreenChange }: Scr
               dataCapacity: results.cabinetsPerDataPort,
               powerCapacity: results.cabinetsPerPowerCable,
             }}
+          />
+        )}
+        {results && (
+          <CableSchedulePanel
+            install={draft.install}
+            dataRuns={plan.routesFor('data')}
+            powerRuns={plan.routesFor('power')}
+            rows={results.rows}
+            cabinetWidthMm={draft.cabinetChoice.cabinet.width}
+            cabinetHeightMm={draft.cabinetChoice.cabinet.height}
           />
         )}
       </section>

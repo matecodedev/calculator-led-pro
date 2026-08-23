@@ -16,6 +16,7 @@ import {
 } from '../calculate';
 import { cabinets, processors, type Cabinet, type Processor } from '../catalog';
 import { riggingLoad, type RiggingLoad } from '../rigging/load';
+import { cableSchedule, type CableSchedule } from '../routing/schedule';
 import { routingDemand, type RoutingDemand } from '../routing/demand';
 import { planRoutes, type GridPosition } from '../routing/serpentine';
 import type { ScreenTotals } from './eventSummary';
@@ -65,6 +66,7 @@ export interface ScreenPlan {
   powerRoutes: GridPosition[][];
   demand: RoutingDemand;
   rigging: RiggingLoad;
+  cables: { data: CableSchedule; power: CableSchedule };
   totals: ScreenTotals;
 }
 
@@ -97,6 +99,19 @@ export function screenPlan(screen: ScreenSnapshot): ScreenPlan | null {
     );
   };
 
+  // Fifteen percent for dressing and ties; the panel states it on screen.
+  const SLACK = 0.15;
+  const scheduleFor = (routes: GridPosition[][]) =>
+    cableSchedule({
+      runs: routes,
+      cabinetWidthMm: input.cabinet.width,
+      cabinetHeightMm: input.cabinet.height,
+      rows: calc.rows,
+      trimHeightM: screen.install.trimHeightM,
+      distanceToSourceM: screen.install.distanceToSourceM ?? 0,
+      slack: SLACK,
+    });
+
   const dataRoutes = routesFor('data');
   const powerRoutes = routesFor('power');
   const demand = routingDemand({
@@ -109,6 +124,10 @@ export function screenPlan(screen: ScreenSnapshot): ScreenPlan | null {
     screen,
     input,
     calc,
+    cables: {
+      data: scheduleFor(dataRoutes),
+      power: scheduleFor(powerRoutes),
+    },
     rigging: riggingLoad({
       mount: screen.rigging.mount,
       cols: calc.cols,
