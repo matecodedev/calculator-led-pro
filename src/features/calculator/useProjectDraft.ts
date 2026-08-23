@@ -69,8 +69,11 @@ export function useProjectDraft(initial?: ScreenSnapshot | null) {
   );
 
   const [trimHeightM, setTrimHeightM] = useState(initial?.install.trimHeightM ?? 0);
-  const [distanceToSourceM, setDistanceToSourceM] = useState<number | null>(
-    initial?.install.distanceToSourceM ?? null,
+  const [distanceToDataM, setDistanceToDataM] = useState<number | null>(
+    initial?.install.distanceToDataM ?? null,
+  );
+  const [distanceToPowerM, setDistanceToPowerM] = useState<number | null>(
+    initial?.install.distanceToPowerM ?? null,
   );
 
   const [calcMode, setCalcMode] = useState<CalcMode>(initial?.target.calcMode ?? 'dimensions');
@@ -196,7 +199,14 @@ export function useProjectDraft(initial?: ScreenSnapshot | null) {
     },
     operating: { brightness, setBrightness, content, setContent },
     rigging: { mount, setMount, points, setPoints, pointCapacityKg, setPointCapacityKg },
-    install: { trimHeightM, setTrimHeightM, distanceToSourceM, setDistanceToSourceM },
+    install: {
+      trimHeightM,
+      setTrimHeightM,
+      distanceToDataM,
+      setDistanceToDataM,
+      distanceToPowerM,
+      setDistanceToPowerM,
+    },
     /** This hook's share of the saved document. */
     snapshotSlice: {
       name: screenName,
@@ -214,7 +224,7 @@ export function useProjectDraft(initial?: ScreenSnapshot | null) {
       supply: { voltage, pduCapacityAmps, breakerAmps, cableLoopAmps },
       operating: { brightness, content },
       rigging: { mount, points, pointCapacityKg },
-      install: { trimHeightM, distanceToSourceM },
+      install: { trimHeightM, distanceToDataM, distanceToPowerM },
     },
     input,
     issues,
