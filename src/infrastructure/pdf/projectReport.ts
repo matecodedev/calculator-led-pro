@@ -442,20 +442,25 @@ export async function renderProjectReport(report: ProjectReport): Promise<Blob> 
       columnStyles: { 1: { halign: 'right' } },
     });
 
-    // A pull sheet: what actually goes in the truck.
-    const declaredDistance = screen.install.distanceToSourceM !== null;
-    const cableRows = (['data', 'power'] as const).flatMap((layer) => {
+    // A pull sheet: what actually goes in the truck. Data and power carry their
+    // own distance because the scaler and the distro are rarely in one place.
+    const cableRows = (
+      [
+        ['data', 'Data', 'la técnica', screen.install.distanceToDataM],
+        ['power', 'Power', 'la usina', screen.install.distanceToPowerM],
+      ] as const
+    ).flatMap(([layer, label, source, distance]) => {
       const schedule = plan.cables[layer];
-      const label = layer === 'data' ? 'Data' : 'Power';
       return [
+        [`${label} · desde ${source}`, distance === null ? 'Sin declarar' : `${distance} m`],
         [`${label} · mains`, `${schedule.totalMains}`],
         [`${label} · jumpers`, `${schedule.totalJumpers}`],
-        ...(declaredDistance
-          ? schedule.mainsByLength.map(({ lengthM, count }) => [
+        ...(distance === null
+          ? []
+          : schedule.mainsByLength.map(({ lengthM, count }) => [
               `${label} · cable de ${lengthM} m`,
               `x ${count}`,
-            ])
-          : []),
+            ])),
       ];
     });
 
@@ -465,7 +470,7 @@ export async function renderProjectReport(report: ProjectReport): Promise<Blob> 
       margin: rightCol,
       tableWidth: colW,
       head: [['Planilla de cables', '']],
-      body: declaredDistance ? cableRows : [...cableRows, ['Largos', 'Falta la distancia al rack']],
+      body: cableRows,
       columnStyles: { 1: { halign: 'right' } },
     });
 

@@ -89,6 +89,19 @@ describe('cableSchedule', () => {
     expect(schedule.beyondLongestCable).toBe(true);
   });
 
+  it('measures each layer against its own source', () => {
+    // The distro lives behind the screen and the scaler lives at the technical
+    // position across the room. One distance cannot describe both.
+    const runs = [column(0, 6)];
+    const power = cableSchedule({ ...base, runs, distanceToSourceM: 3 });
+    const data = cableSchedule({ ...base, runs, distanceToSourceM: 20 });
+
+    // 3 + 1.5 m with slack is 5.17 m, and nothing is made between 5 and 10.
+    expect(power.runs[0].mainLengthM).toBe(10);
+    expect(data.runs[0].mainLengthM).toBe(25);
+    expect(power.runs[0].rawLengthM).toBeLessThan(data.runs[0].rawLengthM);
+  });
+
   it('asks for nothing when nothing is drawn', () => {
     const schedule = cableSchedule({ ...base, runs: [] });
 

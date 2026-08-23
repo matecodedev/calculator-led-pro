@@ -66,11 +66,21 @@ export interface ScreenSnapshot {
    */
   rigging: { mount: MountMode; points: number | null; pointCapacityKg: number | null };
   /**
-   * Where the screen sits relative to the rack, which is what turns a cable
-   * count into cable metres. The distance stays null until declared: a main of
-   * unknown length is not a main of zero.
+   * Where the screen sits relative to its two sources, which is what turns a
+   * cable count into cable metres.
+   *
+   * Data and power are measured separately because they rarely come from the
+   * same place: the distro usually sits behind the screen while the scaler
+   * lives at the technical position across the room. One distance describing
+   * both gets one of them wrong every time.
+   *
+   * Null until declared — a main of unknown length is not a main of zero.
    */
-  install: { trimHeightM: number; distanceToSourceM: number | null };
+  install: {
+    trimHeightM: number;
+    distanceToDataM: number | null;
+    distanceToPowerM: number | null;
+  };
   routing: {
     layer: CableLayer;
     priority: RoutingPriority;
@@ -243,10 +253,15 @@ function parseScreen(
     isFiniteNumber(installRaw.trimHeightM) && installRaw.trimHeightM >= 0
       ? installRaw.trimHeightM
       : 0;
-  const distanceToSourceM =
-    isFiniteNumber(installRaw.distanceToSourceM) && installRaw.distanceToSourceM >= 0
-      ? installRaw.distanceToSourceM
-      : null;
+  const readDistance = (value: unknown, fallback: unknown) => {
+    const chosen = isFiniteNumber(value) ? value : fallback;
+    return isFiniteNumber(chosen) && chosen >= 0 ? chosen : null;
+  };
+  // Documents written while the two sources shared one field keep that figure
+  // for both: it was measured to somewhere real, just not to two places.
+  const legacyDistance = installRaw.distanceToSourceM;
+  const distanceToDataM = readDistance(installRaw.distanceToDataM, legacyDistance);
+  const distanceToPowerM = readDistance(installRaw.distanceToPowerM, legacyDistance);
 
   const manualData = parseRuns(routing.manualData);
   const manualPower = parseRuns(routing.manualPower);
@@ -269,7 +284,7 @@ function parseScreen(
     supply: { voltage, pduCapacityAmps, breakerAmps, cableLoopAmps },
     operating: { brightness, content },
     rigging: { mount, points, pointCapacityKg },
-    install: { trimHeightM, distanceToSourceM },
+    install: { trimHeightM, distanceToDataM, distanceToPowerM },
     routing: {
       layer: routing.layer,
       priority: routing.priority,

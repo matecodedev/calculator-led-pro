@@ -101,14 +101,14 @@ export function screenPlan(screen: ScreenSnapshot): ScreenPlan | null {
 
   // Fifteen percent for dressing and ties; the panel states it on screen.
   const SLACK = 0.15;
-  const scheduleFor = (routes: GridPosition[][]) =>
+  const scheduleFor = (routes: GridPosition[][], distanceM: number | null) =>
     cableSchedule({
       runs: routes,
       cabinetWidthMm: input.cabinet.width,
       cabinetHeightMm: input.cabinet.height,
       rows: calc.rows,
       trimHeightM: screen.install.trimHeightM,
-      distanceToSourceM: screen.install.distanceToSourceM ?? 0,
+      distanceToSourceM: distanceM ?? 0,
       slack: SLACK,
     });
 
@@ -125,8 +125,8 @@ export function screenPlan(screen: ScreenSnapshot): ScreenPlan | null {
     input,
     calc,
     cables: {
-      data: scheduleFor(dataRoutes),
-      power: scheduleFor(powerRoutes),
+      data: scheduleFor(dataRoutes, screen.install.distanceToDataM),
+      power: scheduleFor(powerRoutes, screen.install.distanceToPowerM),
     },
     rigging: riggingLoad({
       mount: screen.rigging.mount,
