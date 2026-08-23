@@ -7,10 +7,13 @@
 ![Vite 6](https://img.shields.io/badge/Vite-6-1f1f1f?logo=vite)
 ![Tailwind 4](https://img.shields.io/badge/Tailwind-4-1f1f1f?logo=tailwindcss)
 ![Offline first](https://img.shields.io/badge/offline-first-CCFF00?labelColor=1f1f1f)
+![MIT licence](https://img.shields.io/badge/licence-MIT-1f1f1f)
 
 Pick a cabinet model, state the screen in metres or in panels, and the app returns the array geometry, resolution, weight, peak electrical load, the cables and processors the build needs, and a cable routing schematic over the panel grid — then exports the whole thing as a PDF work order.
 
 No accounts, no backend, no network. It installs as a PWA and works with the radio off, because a venue has no usable signal and a cache miss is a dead tool rather than a slow one.
+
+**Use it at [matecode.dev](https://matecode.dev)** — open it once with signal, then add it to your home screen and it keeps working without one.
 
 ---
 
@@ -129,7 +132,9 @@ The domain is pure and carries the test suite. React never reaches into it, and 
 
 ## Licence
 
-**Not yet chosen.** Until one is added, default copyright applies: the source is readable here, but it carries no grant to use, modify, or redistribute it.
+[MIT](LICENSE). Use it, fork it, ship it, sell it — a contribution to the event technicians who do this maths on a road case at 2am.
+
+The software comes with no warranty, and the figures it produces are planning figures. See _Electrical assumptions_ above.
 
 ---
 
