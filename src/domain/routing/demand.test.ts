@@ -119,6 +119,27 @@ describe('routingDemand', () => {
     expect(demand.processorsNeeded).toBe(4);
   });
 
+  it('names no ceiling when one controller is enough', () => {
+    // A 15 x 3 m screen of Absen NT2.9: 5,080,320 pixels of the 6.5 M a VX1000
+    // carries, ten cables into its ten ports, well inside the canvas. Nothing
+    // is exceeded, so nothing may be reported as exceeded — the panel was
+    // printing "excede los píxeles que mueve un equipo" over a plan that fits.
+    const demand = routingDemand({
+      dataRuns: runs(23, 10),
+      powerRuns: [],
+      dataPortsPerProcessor: 10,
+      totalPixels: 5_080_320,
+      maxPixelsPerProcessor: 6_500_000,
+      resX: 5_040,
+      resY: 1_008,
+      maxCanvasWidth: 10_240,
+      maxCanvasHeight: 8_192,
+    });
+
+    expect(demand.processorsNeeded).toBe(1);
+    expect(demand.processorLimit).toBeNull();
+  });
+
   it('names which ceiling bit, because the fix is different for each', () => {
     const base = {
       powerRuns: [],

@@ -20,8 +20,10 @@ export interface RoutingDemand {
   powerCables: number;
   processorsNeeded: number;
   /**
-   * Which ceiling decided the count — each has a different way out. Null when
-   * no controller is needed at all: nothing was decided, so nothing decided it.
+   * Which ceiling forced a second controller, and so what to do about it. Null
+   * whenever one box is enough: with nothing exceeded there is nothing to name,
+   * and naming one anyway told a technician their plan was over a limit it was
+   * comfortably inside.
    */
   processorLimit: ProcessorLimit | null;
 }
@@ -89,11 +91,11 @@ export function routingDemand({
 
   const processorsNeeded = Math.max(byPorts, byPixels, byCanvas);
   const processorLimit: ProcessorLimit | null =
-    processorsNeeded === 0
+    processorsNeeded <= 1
       ? null
-      : processorsNeeded === byCanvas && byCanvas > 1
+      : processorsNeeded === byCanvas
         ? 'canvas'
-        : processorsNeeded === byPixels && byPixels >= byPorts
+        : processorsNeeded === byPixels
           ? 'pixels'
           : 'ports';
 
