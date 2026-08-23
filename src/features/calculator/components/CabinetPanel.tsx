@@ -13,11 +13,11 @@ import type { CabinetChoice, TargetControls } from '../useProjectDraft';
 
 /** The editable fields of a custom cabinet, in the order a spec sheet lists them. */
 const CUSTOM_FIELDS = [
-  { key: 'width', label: 'Width (mm)' },
-  { key: 'height', label: 'Height (mm)' },
+  { key: 'width', label: 'Ancho (mm)' },
+  { key: 'height', label: 'Alto (mm)' },
   { key: 'resX', label: 'Res X (px)' },
   { key: 'resY', label: 'Res Y (px)' },
-  { key: 'maxPower', label: 'Max power (W)' },
+  { key: 'maxPower', label: 'Potencia máx. (W)' },
   { key: 'pitch', label: 'Pitch (mm)' },
 ] as const satisfies readonly { key: keyof Cabinet; label: string }[];
 
@@ -40,11 +40,11 @@ export default function CabinetPanel({ choice, target }: CabinetPanelProps) {
           </span>
         }
       >
-        Dimension &amp; Cabinet
+        Medidas y gabinete
       </SectionHeading>
 
       <div className="space-y-4">
-        <Field label="Cabinet / Panel">
+        <Field label="Gabinete / Panel">
           {(id) => (
             <select
               id={id}
@@ -57,7 +57,7 @@ export default function CabinetPanel({ choice, target }: CabinetPanelProps) {
                   {c.brand} {c.model} ({c.pitch}mm)
                 </option>
               ))}
-              <option value="custom">-- Custom Cabinet --</option>
+              <option value="custom">-- Gabinete personalizado --</option>
             </select>
           )}
         </Field>
@@ -83,18 +83,18 @@ export default function CabinetPanel({ choice, target }: CabinetPanelProps) {
         )}
 
         <SegmentedControl
-          label="Calculation Mode"
+          label="Modo de cálculo"
           value={target.calcMode}
           onChange={target.setCalcMode}
           segments={[
-            { value: 'dimensions', label: 'By Metres' },
-            { value: 'count', label: 'By Panel Count' },
+            { value: 'dimensions', label: 'Por metros' },
+            { value: 'count', label: 'Por cantidad' },
           ]}
         />
 
         {target.calcMode === 'dimensions' ? (
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Width (m)">
+            <Field label="Ancho (m)">
               {(id) => (
                 <input
                   id={id}
@@ -108,7 +108,7 @@ export default function CabinetPanel({ choice, target }: CabinetPanelProps) {
                 />
               )}
             </Field>
-            <Field label="Height (m)">
+            <Field label="Alto (m)">
               {(id) => (
                 <input
                   id={id}
@@ -125,7 +125,7 @@ export default function CabinetPanel({ choice, target }: CabinetPanelProps) {
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Columns (horizontal)">
+            <Field label="Columnas (horizontal)">
               {(id) => (
                 <input
                   id={id}
@@ -139,7 +139,7 @@ export default function CabinetPanel({ choice, target }: CabinetPanelProps) {
                 />
               )}
             </Field>
-            <Field label="Rows (vertical)">
+            <Field label="Filas (vertical)">
               {(id) => (
                 <input
                   id={id}

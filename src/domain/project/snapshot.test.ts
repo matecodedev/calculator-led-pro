@@ -284,6 +284,6 @@ describe('describeSnapshot', () => {
   it('has something to call an event with nothing named at all', () => {
     expect(
       describeSnapshot({ ...snapshot, eventName: '', screens: [{ ...screen, name: '' }] }),
-    ).toBe('Untitled event');
+    ).toBe('Evento sin nombre');
   });
 });

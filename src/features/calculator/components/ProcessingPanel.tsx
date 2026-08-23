@@ -24,11 +24,11 @@ export default function ProcessingPanel({ choice, results, demand }: ProcessingP
   return (
     <div className="p-6 border-b border-[#333] bg-[#0F0F0F]">
       <SectionHeading icon={<Cpu className="w-4 h-4" />} accent="fuchsia">
-        Processing &amp; Data Mapper
+        Procesamiento y mapeo de data
       </SectionHeading>
 
       <div className="space-y-4">
-        <Field label="Processor / Sending Box">
+        <Field label="Procesador / Sending box">
           {(id) => (
             <select
               id={id}
@@ -83,26 +83,27 @@ export default function ProcessingPanel({ choice, results, demand }: ProcessingP
         {results ? (
           <div className="grid grid-cols-2 gap-4 mt-4">
             <StatTile
-              label="Main Data Cables Req."
+              label="Cables de data necesarios"
               value={demand.dataCables}
               tone="data"
-              footnote={`~${results.cabinetsPerDataPort} cab / cable`}
+              footnote={`~${results.cabinetsPerDataPort} gab / cable`}
             />
             <StatTile
-              label="Processors Needed"
+              label="Procesadores necesarios"
               tone={overCapacity ? 'power' : 'neutral'}
               className={`bg-[#161616] ${overCapacity ? 'border-amber-500' : 'border-[#333]'}`}
               value={
                 <>
                   {demand.processorsNeeded}
-                  <span className="text-xs ml-1 text-neutral-400">units</span>
+                  <span className="text-xs ml-1 text-neutral-400">unid.</span>
                 </>
               }
               footnote={
                 overCapacity && (
                   <span className="text-amber-400 font-bold tracking-widest uppercase">
-                    Add {demand.processorsNeeded - 1} more processor
-                    {demand.processorsNeeded > 2 ? 's' : ''}
+                    Falta{demand.processorsNeeded > 2 ? 'n' : ''} {demand.processorsNeeded - 1}{' '}
+                    procesador
+                    {demand.processorsNeeded > 2 ? 'es' : ''}
                   </span>
                 )
               }

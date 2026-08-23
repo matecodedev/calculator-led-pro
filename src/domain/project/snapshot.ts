@@ -321,5 +321,5 @@ export function parseSnapshot(value: unknown): EventSnapshot | null {
 export function describeSnapshot({ eventName, screens }: EventSnapshot): string {
   if (eventName) return eventName;
   const named = screens.map((s) => s.name).filter(Boolean);
-  return named[0] ?? 'Untitled event';
+  return named[0] ?? 'Evento sin nombre';
 }

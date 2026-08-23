@@ -39,8 +39,8 @@ export default function ServiceWorkerNotice() {
       <div className="flex-1">
         <p className="text-xs text-[#E0E0E0]">
           {needRefresh
-            ? 'A new version is ready. Reload when you are between screens — your saved work is kept.'
-            : 'Ready to work offline. The whole app is on this device now.'}
+            ? 'Hay una versión nueva. Recargar entre pantalla y pantalla — el trabajo guardado se conserva.'
+            : 'Lista para trabajar sin conexión. La app entera ya está en este dispositivo.'}
         </p>
         {needRefresh && (
           <button
@@ -48,7 +48,7 @@ export default function ServiceWorkerNotice() {
             onClick={() => void updateServiceWorker(true)}
             className={`mt-3 px-3 py-2 min-h-11 bg-[#CCFF00] text-black text-[11px] font-bold uppercase tracking-wider rounded-sm hover:bg-[#aacc00] transition-colors ${buttonFocusClass}`}
           >
-            Reload now
+            Recargar ahora
           </button>
         )}
       </div>
@@ -56,7 +56,7 @@ export default function ServiceWorkerNotice() {
       <button
         type="button"
         onClick={dismiss}
-        aria-label="Dismiss"
+        aria-label="Cerrar aviso"
         className={`text-neutral-400 hover:text-white shrink-0 ${buttonFocusClass}`}
       >
         <X className="w-4 h-4" aria-hidden="true" />

@@ -31,7 +31,7 @@ export default function ProjectBar({
 }: ProjectBarProps) {
   return (
     <div className="px-4 py-3 bg-[#0F0F0F] border-b border-[#333] flex flex-wrap items-end gap-3">
-      <Field label="Saved Screens" className="min-w-[14rem] flex-1 sm:flex-none">
+      <Field label="Eventos guardados" className="min-w-[14rem] flex-1 sm:flex-none">
         {(id) => (
           <select
             id={id}
@@ -41,7 +41,7 @@ export default function ProjectBar({
             className={`${selectControlClass('lime')} text-xs disabled:opacity-40`}
           >
             <option value="">
-              {projects.length === 0 ? 'Nothing saved yet' : 'Open a saved screen…'}
+              {projects.length === 0 ? 'Todavía no guardaste nada' : 'Abrir un evento guardado…'}
             </option>
             {projects.map((project) => (
               <option key={project.id} value={project.id}>
@@ -56,11 +56,15 @@ export default function ProjectBar({
         type="button"
         onClick={onSave}
         disabled={!saveName || !storageAvailable}
-        title={saveName ? `Save as "${saveName}"` : 'Name the event or the screen first'}
+        title={
+          saveName
+            ? `Guardar como "${saveName}"`
+            : 'Primero hay que nombrar el evento o la pantalla'
+        }
         className={`${actionClass} bg-[#CCFF00] text-black border-transparent hover:bg-[#aacc00]`}
       >
         <Save className="w-3.5 h-3.5" aria-hidden="true" />
-        {openProjectId ? 'Update Screen' : 'Save Screen'}
+        {openProjectId ? 'Actualizar evento' : 'Guardar evento'}
       </button>
 
       <button
@@ -70,7 +74,7 @@ export default function ProjectBar({
         className={`${actionClass} bg-[#1A1A1A] text-red-400 border-[#444] hover:text-red-300`}
       >
         <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-        Delete
+        Eliminar
       </button>
 
       <p
@@ -85,8 +89,8 @@ export default function ProjectBar({
           <>
             <FolderOpen className="w-3.5 h-3.5" aria-hidden="true" />
             {savedAt
-              ? `Autosaved ${savedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-              : 'Autosaves as you work'}
+              ? `Guardado ${savedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+              : 'Se guarda solo mientras trabajás'}
           </>
         )}
       </p>

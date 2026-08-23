@@ -15,8 +15,8 @@ export default defineConfig({
         name: 'Calculator Led Pro',
         short_name: 'LED Pro',
         description:
-          'Field calculator for LED screen technicians: array geometry, electrical load, cable counts and routing schematics.',
-        lang: 'en',
+          'Calculadora de campo para técnicos de pantallas LED: geometría, carga eléctrica, cables y esquemáticos de ruteo.',
+        lang: 'es',
         start_url: '/',
         scope: '/',
         display: 'standalone',

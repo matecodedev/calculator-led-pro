@@ -60,7 +60,7 @@ export default function ProjectAlerts({
           <button
             type="button"
             onClick={notice.onDismiss}
-            aria-label="Dismiss notice"
+            aria-label="Cerrar aviso"
             className="text-[#7FD4E8] hover:text-white shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#CCFF00]"
           >
             <X className="w-4 h-4" aria-hidden="true" />
@@ -73,7 +73,7 @@ export default function ProjectAlerts({
           <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" aria-hidden="true" />
           <div>
             <p className="text-amber-400 text-[11px] font-bold uppercase tracking-widest mb-1">
-              {issues.length === 1 ? 'Check this value' : `Check these ${issues.length} values`}
+              {issues.length === 1 ? 'Revisá este valor' : `Revisá estos ${issues.length} valores`}
             </p>
             <ul className="text-amber-100 text-xs space-y-1">
               {issues.map((issue) => (

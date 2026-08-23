@@ -51,7 +51,7 @@ export default function RoutingToolbar({ plan, onAutoFill }: RoutingToolbarProps
   return (
     <div className="flex flex-wrap gap-3 w-full sm:w-auto">
       <SegmentedControl
-        label="Cable Layer"
+        label="Capa"
         value={plan.layer}
         onChange={plan.setLayer}
         accent={plan.layer === 'power' ? 'red' : 'lime'}
@@ -76,7 +76,7 @@ export default function RoutingToolbar({ plan, onAutoFill }: RoutingToolbarProps
       />
 
       <SegmentedControl
-        label="Mode"
+        label="Modo"
         value={plan.mode}
         onChange={plan.setMode}
         variant="subtle"
@@ -86,7 +86,7 @@ export default function RoutingToolbar({ plan, onAutoFill }: RoutingToolbarProps
         ]}
       />
 
-      <Field label="Priority">
+      <Field label="Prioridad">
         {(id) => (
           <select
             id={id}
@@ -94,13 +94,13 @@ export default function RoutingToolbar({ plan, onAutoFill }: RoutingToolbarProps
             onChange={(e) => plan.setPriority(e.target.value as RoutingPriority)}
             className={`${selectControlClass('lime')} text-[11px]`}
           >
-            <option value="vertical">Vertical Snake</option>
-            <option value="horizontal">Horizontal Snake</option>
+            <option value="vertical">Serpentina vertical</option>
+            <option value="horizontal">Serpentina horizontal</option>
           </select>
         )}
       </Field>
 
-      <Field label="Starting Corner">
+      <Field label="Esquina de arranque">
         {(id) => (
           <select
             id={id}
@@ -125,8 +125,8 @@ export default function RoutingToolbar({ plan, onAutoFill }: RoutingToolbarProps
             onChange={(e) => plan.setMains(e.target.value as MainsPolicy)}
             className={`${selectControlClass('lime')} text-[11px]`}
           >
-            <option value="start-edge">Every cable from the edge</option>
-            <option value="continuous">One continuous snake</option>
+            <option value="start-edge">Cada cable desde el borde</option>
+            <option value="continuous">Una serpentina continua</option>
           </select>
         )}
       </Field>
@@ -134,14 +134,14 @@ export default function RoutingToolbar({ plan, onAutoFill }: RoutingToolbarProps
       {plan.mode === 'manual' && (
         <div>
           <span className="block text-[11px] uppercase tracking-wide text-neutral-400 mb-1">
-            Manual Controls
+            Controles manuales
           </span>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={onAutoFill}
               className={`${actionClass} bg-[#10b981] text-black hover:bg-[#34d399] border-[#059669]`}
-              title="Generate the optimal serpentine for both Data and Power"
+              title="Genera la serpentina óptima para data y power"
             >
               Auto-Path
             </button>
@@ -150,21 +150,21 @@ export default function RoutingToolbar({ plan, onAutoFill }: RoutingToolbarProps
               onClick={startNewRun}
               className={`${actionClass} bg-[#333] text-white hover:bg-[#444] border-[#555]`}
             >
-              + New Line
+              + Nueva línea
             </button>
             <button
               type="button"
               onClick={undoLastCabinet}
               className={`${actionClass} bg-[#1A1A1A] text-neutral-300 hover:text-white border-[#444]`}
             >
-              Undo
+              Deshacer
             </button>
             <button
               type="button"
               onClick={() => plan.setManualRoutes([[]])}
               className={`${actionClass} bg-[#1A1A1A] text-red-400 hover:text-red-300 border-[#444]`}
             >
-              Clear All
+              Borrar todo
             </button>
           </div>
         </div>
