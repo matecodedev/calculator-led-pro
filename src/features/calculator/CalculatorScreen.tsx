@@ -6,6 +6,7 @@ import {
   SNAPSHOT_VERSION,
   type ProjectSnapshot,
 } from '../../domain/project/snapshot';
+import { routingDemand } from '../../domain/routing/demand';
 import { renderProjectReport, reportFilename } from '../../infrastructure/pdf/projectReport';
 import {
   browserStore,
@@ -111,6 +112,19 @@ function CalculatorWorkspace({
 
   const { results, issues } = draft;
 
+  // What the plan actually costs. This used to be the cabinet count divided by
+  // the loop capacity, computed beside the routing instead of from it, so the
+  // report printed three main data cables over a schematic that drew four.
+  // Guarded on `results`: with a half-typed processor there is no valid port
+  // count to divide by, and the panels show nothing at that point anyway.
+  const demand = results
+    ? routingDemand({
+        dataRuns: plan.routesFor('data'),
+        powerRuns: plan.routesFor('power'),
+        dataPortsPerProcessor: draft.processorChoice.processor.dataPorts,
+      })
+    : { dataCables: 0, powerCables: 0, processorsNeeded: 0 };
+
   // The one hazard in this app that can hurt someone. It gets the global alarm
   // channel, above the fold, on every breakpoint — not a footnote two screens down.
   const danger: DangerAlert | null =
@@ -179,6 +193,7 @@ function CalculatorWorkspace({
         cableLoopAmps: draft.supply.cableLoopAmps,
         dataRoutes: plan.routesFor('data'),
         powerRoutes: plan.routesFor('power'),
+        demand,
       });
       downloadBlob(blob, reportFilename(draft.identity));
       setExportError(null);
@@ -257,8 +272,8 @@ function CalculatorWorkspace({
         </div>
 
         <div className="grid grid-rows-[auto_1fr]">
-          <ProcessingPanel choice={draft.processorChoice} results={results} />
-          <ElectricalPanel supply={draft.supply} results={results} />
+          <ProcessingPanel choice={draft.processorChoice} results={results} demand={demand} />
+          <ElectricalPanel supply={draft.supply} results={results} demand={demand} />
         </div>
       </section>
 

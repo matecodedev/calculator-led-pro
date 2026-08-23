@@ -13,6 +13,7 @@ import {
   OVER_CAPACITY_COLOR,
   POWER_CABLE_COLORS,
 } from '../../domain/routing/palette';
+import type { RoutingDemand } from '../../domain/routing/demand';
 import type { GridPosition } from '../../domain/routing/serpentine';
 
 export interface ProjectReport {
@@ -27,6 +28,12 @@ export interface ProjectReport {
   cableLoopAmps: number;
   dataRoutes: GridPosition[][];
   powerRoutes: GridPosition[][];
+  /**
+   * Counted off the routes above. The report used to divide the cabinet count
+   * by the loop capacity and print a smaller number than the schematic on the
+   * next page drew, which is a shortfall a crew discovers on site.
+   */
+  demand: RoutingDemand;
 }
 
 /** jspdf-autotable attaches this to the document but does not declare it. */
@@ -119,8 +126,8 @@ export async function renderProjectReport(report: ProjectReport): Promise<Blob> 
     head: [['Data & Processing', 'Value']],
     body: [
       ['Processor Model', `${processor.brand} ${processor.model}`],
-      ['Total Units Needed', `${calc.processorsNeeded}`],
-      ['Main Data Cables Needed', `${calc.dataCablesNeeded}`],
+      ['Total Units Needed', `${report.demand.processorsNeeded}`],
+      ['Main Data Cables Needed', `${report.demand.dataCables}`],
       ['Cabinets per Data Loop', `${calc.cabinetsPerDataPort}`],
     ],
     theme: 'grid',
@@ -136,7 +143,7 @@ export async function renderProjectReport(report: ProjectReport): Promise<Blob> 
       ['PowerCON Max Load', `${report.cableLoopAmps} A`],
       ['Total Peak Power', `${(calc.maxPowerW / 1000).toFixed(2)} kW`],
       ['Total Peak Current', `${calc.maxAmps.toFixed(2)} A`],
-      ['Main Power Cables Needed', `${calc.powerCablesNeeded}`],
+      ['Main Power Cables Needed', `${report.demand.powerCables}`],
       ['Max Cabinets per Power Cable', `${calc.cabinetsPerPowerCable}`],
     ],
     theme: 'grid',
@@ -202,6 +209,18 @@ export async function renderProjectReport(report: ProjectReport): Promise<Blob> 
       const first = route[0];
       if (first) {
         const start = centreOf(first);
+
+        // The main, drawn to the floor: the processor and the PDU are on the
+        // ground, so this is the cable the crew actually pulls. Solid and thin,
+        // so it never reads as part of the daisy chain.
+        const floorY = offsetY + calc.rows * cellHeight;
+        doc.setLineDashPattern([], 0);
+        doc.setLineWidth(0.25);
+        doc.line(start.x, start.y, start.x, floorY);
+        doc.setLineWidth(0.6);
+        doc.line(start.x - cellWidth * 0.15, floorY, start.x + cellWidth * 0.15, floorY);
+        if (overCapacity) doc.setLineDashPattern([1.4, 1], 0);
+
         doc.circle(start.x, start.y, 1.5, 'DF');
 
         if (overCapacity) {

@@ -26,7 +26,6 @@ export interface ElectricalLoad {
   maxAmps: number;
   ampsPerLine: number;
   cabinetsPerPowerCable: number;
-  powerCablesNeeded: number;
 }
 
 function requirePositive(value: number, name: string): void {
@@ -87,6 +86,5 @@ export function calculateElectricalLoad(input: ElectricalInput): ElectricalLoad 
     maxAmps: maxPowerW / voltage,
     ampsPerLine,
     cabinetsPerPowerCable,
-    powerCablesNeeded: Math.ceil(totalCabinets / cabinetsPerPowerCable),
   };
 }

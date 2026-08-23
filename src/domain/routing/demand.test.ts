@@ -1,0 +1,71 @@
+import { describe, expect, it } from 'vitest';
+
+import { routingDemand } from './demand';
+import { planRoutes, type GridPosition } from './serpentine';
+
+/** `runs(3, 2)` is two runs of three cabinets; the coordinates do not matter. */
+const runs = (length: number, count: number): GridPosition[][] =>
+  Array.from({ length: count }, (_, r) => Array.from({ length }, (_, i) => ({ x: i, y: r })));
+
+describe('routingDemand', () => {
+  it('counts the cables the plan actually draws', () => {
+    const demand = routingDemand({
+      dataRuns: runs(18, 4),
+      powerRuns: runs(12, 5),
+      dataPortsPerProcessor: 4,
+    });
+
+    expect(demand.dataCables).toBe(4);
+    expect(demand.powerCables).toBe(5);
+  });
+
+  it('reports the shortfall the old arithmetic hid', () => {
+    // The Amcham report: a 10x6 screen, 23 cabinets per data loop and 17 per
+    // power cable. Dividing says 3 and 4. The drawing needs 4 and 5, because a
+    // run takes whole columns so its main can reach the floor.
+    const grid = { cols: 10, rows: 6, priority: 'vertical', start: 'bottom-left' } as const;
+    const demand = routingDemand({
+      dataRuns: planRoutes({ ...grid, capacity: 23 }),
+      powerRuns: planRoutes({ ...grid, capacity: 17 }),
+      dataPortsPerProcessor: 4,
+    });
+
+    expect(Math.ceil(60 / 23)).toBe(3);
+    expect(Math.ceil(60 / 17)).toBe(4);
+    expect(demand.dataCables).toBe(4);
+    expect(demand.powerCables).toBe(5);
+  });
+
+  it('sizes the processor count from the cables that exist, not the theoretical minimum', () => {
+    // Four data runs on a four-port box is one processor; a fifth needs a second.
+    expect(
+      routingDemand({ dataRuns: runs(9, 4), powerRuns: [], dataPortsPerProcessor: 4 }),
+    ).toHaveProperty('processorsNeeded', 1);
+    expect(
+      routingDemand({ dataRuns: runs(9, 5), powerRuns: [], dataPortsPerProcessor: 4 }),
+    ).toHaveProperty('processorsNeeded', 2);
+  });
+
+  it('ignores the empty run a half-drawn manual plan carries', () => {
+    const demand = routingDemand({
+      dataRuns: [[{ x: 0, y: 0 }], []],
+      powerRuns: [[]],
+      dataPortsPerProcessor: 2,
+    });
+
+    expect(demand.dataCables).toBe(1);
+    expect(demand.powerCables).toBe(0);
+  });
+
+  it('asks for nothing when nothing is drawn', () => {
+    const demand = routingDemand({ dataRuns: [], powerRuns: [], dataPortsPerProcessor: 4 });
+
+    expect(demand).toEqual({ dataCables: 0, powerCables: 0, processorsNeeded: 0 });
+  });
+
+  it.each([0, -1, 2.5])('rejects a processor with %s data ports', (ports) => {
+    expect(() =>
+      routingDemand({ dataRuns: [], powerRuns: [], dataPortsPerProcessor: ports }),
+    ).toThrow(RangeError);
+  });
+});
