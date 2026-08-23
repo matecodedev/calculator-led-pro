@@ -20,6 +20,9 @@ export interface ScreenTotals {
   weightKg: number;
   maxPowerW: number;
   maxAmps: number;
+  /** What the screen is likely to pull at the brightness it is run. */
+  expectedPowerW: number;
+  expectedAmps: number;
   dataCables: number;
   powerCables: number;
   processors: number;
@@ -37,6 +40,8 @@ export interface EventSummary {
   totalWeightKg: number;
   totalMaxPowerW: number;
   totalMaxAmps: number;
+  totalExpectedPowerW: number;
+  totalExpectedAmps: number;
   totalDataCables: number;
   totalPowerCables: number;
   totalProcessors: number;
@@ -71,6 +76,8 @@ export function summariseEvent({ screens, capacityAmps }: EventSummaryInput): Ev
     totalWeightKg: sum(screens, (s) => s.weightKg),
     totalMaxPowerW: sum(screens, (s) => s.maxPowerW),
     totalMaxAmps,
+    totalExpectedPowerW: sum(screens, (s) => s.expectedPowerW),
+    totalExpectedAmps: sum(screens, (s) => s.expectedAmps),
     totalDataCables: sum(screens, (s) => s.dataCables),
     totalPowerCables: sum(screens, (s) => s.powerCables),
     totalProcessors: sum(screens, (s) => s.processors),

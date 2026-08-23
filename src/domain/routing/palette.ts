@@ -38,6 +38,38 @@ export const POWER_CABLE_COLORS = ['#f59e0b', '#22d3ee', '#a78bfa', '#4ade80', '
  */
 export const OVER_CAPACITY_COLOR = '#ef4444';
 
+/**
+ * The same cables, in ink.
+ *
+ * Screen colours are chosen for a dark UI and several of them vanish on white
+ * paper — the lime that identifies the first data cable is barely visible
+ * printed. These are the same hues in the same order, darkened for paper, so
+ * the third cable on screen is still the third cable on the page. The identity
+ * is the position and the hue; the lightness belongs to the medium.
+ */
+export const PRINT_DATA_CABLE_COLORS = [
+  '#7A9900',
+  '#0E7490',
+  '#047857',
+  '#B45309',
+  '#C2410C',
+  '#1D4ED8',
+  '#6D28D9',
+  '#A21CAF',
+  '#BE185D',
+] as const;
+
+export const PRINT_POWER_CABLE_COLORS = [
+  '#B45309',
+  '#0E7490',
+  '#6D28D9',
+  '#15803D',
+  '#BE185D',
+] as const;
+
+/** Reserved on paper too, and dark enough to read. */
+export const PRINT_OVER_CAPACITY_COLOR = '#B91C1C';
+
 export type CableLayer = 'data' | 'power';
 
 export function cableColors(layer: CableLayer): readonly string[] {

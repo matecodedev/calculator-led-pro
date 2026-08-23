@@ -8,10 +8,15 @@
  * which is how a total ends up disagreeing with the screen it came from.
  */
 
-import { calculateProject, validateProject, type ProjectInput } from '../calculate';
+import {
+  calculateProject,
+  validateProject,
+  type ProjectCalculation,
+  type ProjectInput,
+} from '../calculate';
 import { cabinets, processors, type Cabinet, type Processor } from '../catalog';
-import { routingDemand } from '../routing/demand';
-import { planRoutes } from '../routing/serpentine';
+import { routingDemand, type RoutingDemand } from '../routing/demand';
+import { planRoutes, type GridPosition } from '../routing/serpentine';
 import type { ScreenTotals } from './eventSummary';
 import type { ScreenSnapshot } from './snapshot';
 
@@ -45,11 +50,28 @@ export function screenInput(screen: ScreenSnapshot): ProjectInput {
 }
 
 /**
+ * Everything the report needs about one screen, worked out once.
+ *
+ * The event summary wants totals and the PDF wants the drawing as well, and
+ * both have to be the same plan — deriving them separately is how a table comes
+ * to disagree with the schematic printed under it.
+ */
+export interface ScreenPlan {
+  screen: ScreenSnapshot;
+  input: ProjectInput;
+  calc: ProjectCalculation;
+  dataRoutes: GridPosition[][];
+  powerRoutes: GridPosition[][];
+  demand: RoutingDemand;
+  totals: ScreenTotals;
+}
+
+/**
  * Null when the screen does not describe something calculable — a half-typed
  * cabinet, an impossible grid. The caller shows it as pending rather than
  * counting a guess into the event total.
  */
-export function screenTotals(screen: ScreenSnapshot): ScreenTotals | null {
+export function screenPlan(screen: ScreenSnapshot): ScreenPlan | null {
   const input = screenInput(screen);
   if (validateProject(input).length > 0) return null;
 
@@ -73,23 +95,40 @@ export function screenTotals(screen: ScreenSnapshot): ScreenTotals | null {
     );
   };
 
+  const dataRoutes = routesFor('data');
+  const powerRoutes = routesFor('power');
   const demand = routingDemand({
-    dataRuns: routesFor('data'),
-    powerRuns: routesFor('power'),
+    dataRuns: dataRoutes,
+    powerRuns: powerRoutes,
     dataPortsPerProcessor: input.processor.dataPorts,
   });
 
   return {
-    id: screen.id,
-    name: screen.name,
-    cols: calc.cols,
-    rows: calc.rows,
-    totalCabinets: calc.totalCabinets,
-    weightKg: calc.weightTotal,
-    maxPowerW: calc.maxPowerW,
-    maxAmps: calc.maxAmps,
-    dataCables: demand.dataCables,
-    powerCables: demand.powerCables,
-    processors: demand.processorsNeeded,
+    screen,
+    input,
+    calc,
+    dataRoutes,
+    powerRoutes,
+    demand,
+    totals: {
+      id: screen.id,
+      name: screen.name,
+      cols: calc.cols,
+      rows: calc.rows,
+      totalCabinets: calc.totalCabinets,
+      weightKg: calc.weightTotal,
+      maxPowerW: calc.maxPowerW,
+      maxAmps: calc.maxAmps,
+      expectedPowerW: calc.expectedPowerW,
+      expectedAmps: calc.expectedAmps,
+      dataCables: demand.dataCables,
+      powerCables: demand.powerCables,
+      processors: demand.processorsNeeded,
+    },
   };
+}
+
+/** Just the figures, for the event summary. */
+export function screenTotals(screen: ScreenSnapshot): ScreenTotals | null {
+  return screenPlan(screen)?.totals ?? null;
 }

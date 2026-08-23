@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Download } from 'lucide-react';
 
 import { summariseEvent } from '../../domain/project/eventSummary';
-import { screenTotals } from '../../domain/project/screenTotals';
+import { screenPlan } from '../../domain/project/screenTotals';
 import {
   describeSnapshot,
   newScreenId,
@@ -136,6 +136,7 @@ export default function CalculatorScreen() {
   const [projects, setProjects] = useState<SavedProject[]>(() => listProjects());
   const [openProjectId, setOpenProjectId] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
   const storageAvailable = browserStore() !== null;
 
   const active = event.screens.find((s) => s.id === event.activeScreenId) ?? event.screens[0];
@@ -143,10 +144,18 @@ export default function CalculatorScreen() {
   // Every screen, including the one being edited, goes through the same
   // arithmetic. A second path for the active screen is how a total ends up
   // disagreeing with the screen it came from.
-  const summary = useMemo(() => {
-    const totals = event.screens.map(screenTotals).filter((t) => t !== null);
-    return summariseEvent({ screens: totals, capacityAmps: event.mainsCapacityAmps });
-  }, [event.screens, event.mainsCapacityAmps]);
+  const plans = useMemo(
+    () => event.screens.map(screenPlan).filter((p) => p !== null),
+    [event.screens],
+  );
+  const summary = useMemo(
+    () =>
+      summariseEvent({
+        screens: plans.map((p) => p.totals),
+        capacityAmps: event.mainsCapacityAmps,
+      }),
+    [plans, event.mainsCapacityAmps],
+  );
 
   // Serialising gives the effect a stable dependency; the object identity
   // changes on every render, the text only changes when the work does.
@@ -229,6 +238,28 @@ export default function CalculatorScreen() {
     setOpenProjectId(null);
   };
 
+  // One document for the whole show. A crew builds from one printout, not from
+  // five exported one at a time, and the totals only mean anything together.
+  const exportReport = async () => {
+    if (plans.length === 0) return;
+    try {
+      const blob = await renderProjectReport({
+        eventName: event.eventName,
+        screens: plans,
+        summary,
+      });
+      downloadBlob(blob, reportFilename({ eventName: event.eventName }));
+      setExportError(null);
+    } catch (error) {
+      console.error('PDF export failed', error);
+      setExportError('No se pudo generar el PDF. Intentá de nuevo.');
+    }
+  };
+
+  const exportButtonClass =
+    'flex items-center justify-center gap-2 min-h-11 bg-[#CCFF00] text-black font-bold uppercase tracking-wider ' +
+    `rounded-sm transition-colors hover:bg-[#aacc00] disabled:opacity-40 disabled:cursor-not-allowed ${buttonFocusClass}`;
+
   // The show as a whole overrunning the venue feed is a hazard no single screen
   // can see: each one passes its own PDU and the sum still trips the building.
   const eventDanger: DangerAlert | null = summary.overCapacity
@@ -254,6 +285,27 @@ export default function CalculatorScreen() {
         onDelete={handleDelete}
       />
 
+      <div className="p-4 bg-[#111] border-b border-[#333] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 className="text-xs font-bold tracking-widest uppercase text-white">
+            Plan del evento
+          </h2>
+          <p className="text-[11px] text-neutral-500 mt-0.5">
+            Un PDF con el resumen, las {plans.length}{' '}
+            {plans.length === 1 ? 'pantalla' : 'pantallas'} y sus esquemáticos
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => void exportReport()}
+          disabled={plans.length === 0}
+          className={`${exportButtonClass} px-4 py-3 sm:py-2 text-[11px] w-full sm:w-auto`}
+        >
+          <Download className="w-4 h-4" aria-hidden="true" />
+          Descargar PDF del evento
+        </button>
+      </div>
+
       <EventBar
         eventName={event.eventName}
         onEventNameChange={(eventName) => setEvent((p) => ({ ...p, eventName }))}
@@ -273,8 +325,8 @@ export default function CalculatorScreen() {
       <ScreenEditor
         key={`${generation}-${active.id}`}
         initial={active}
-        eventName={event.eventName}
         eventDanger={eventDanger}
+        exportError={exportError}
         onScreenChange={updateActiveScreen}
       />
     </div>
@@ -283,16 +335,14 @@ export default function CalculatorScreen() {
 
 interface ScreenEditorProps {
   initial: ScreenSnapshot;
-  eventName: string;
   eventDanger: DangerAlert | null;
+  exportError: string | null;
   onScreenChange: (screen: ScreenSnapshot) => void;
 }
 
-function ScreenEditor({ initial, eventName, eventDanger, onScreenChange }: ScreenEditorProps) {
+function ScreenEditor({ initial, eventDanger, exportError, onScreenChange }: ScreenEditorProps) {
   const draft = useProjectDraft(initial);
   const plan = useRoutingPlan(draft.results, initial);
-  const [exportError, setExportError] = useState<string | null>(null);
-
   const { results, issues } = draft;
 
   // What the plan actually costs. This used to be the cabinet count divided by
@@ -329,63 +379,8 @@ function ScreenEditor({ initial, eventName, eventDanger, onScreenChange }: Scree
         }
       : null;
 
-  const exportReport = async () => {
-    if (!results) return;
-    const identity = { eventName, screenName: draft.identity.screenName };
-    try {
-      const blob = await renderProjectReport({
-        ...identity,
-        cabinet: draft.cabinetChoice.cabinet,
-        processor: draft.processorChoice.processor,
-        calculation: results,
-        voltage: draft.supply.voltage,
-        pduCapacityAmps: draft.supply.pduCapacityAmps,
-        breakerAmps: draft.supply.breakerAmps,
-        cableLoopAmps: draft.supply.cableLoopAmps,
-        dataRoutes: plan.routesFor('data'),
-        powerRoutes: plan.routesFor('power'),
-        demand,
-      });
-      downloadBlob(blob, reportFilename(identity));
-      setExportError(null);
-    } catch (error) {
-      console.error('PDF export failed', error);
-      setExportError('No se pudo generar el PDF. Intentá de nuevo.');
-    }
-  };
-
-  const exportButtonClass =
-    'flex items-center justify-center gap-2 min-h-11 bg-[#CCFF00] text-black font-bold uppercase tracking-wider ' +
-    `rounded-sm transition-colors hover:bg-[#aacc00] disabled:opacity-40 disabled:cursor-not-allowed ${buttonFocusClass}`;
-
   return (
     <div>
-      <div className="p-4 bg-[#111] border-b border-[#333] justify-between items-center sticky top-0 z-10 hidden sm:flex">
-        <h2 className="text-xs font-bold tracking-widest uppercase text-white">
-          Configuración de la pantalla
-        </h2>
-        <button
-          type="button"
-          onClick={() => void exportReport()}
-          disabled={!results}
-          className={`${exportButtonClass} px-4 py-2 text-[11px] shadow-lg`}
-        >
-          <Download className="w-3.5 h-3.5" aria-hidden="true" />
-          Exportar PDF
-        </button>
-      </div>
-      <div className="p-4 bg-[#111] border-b border-[#333] sm:hidden">
-        <button
-          type="button"
-          onClick={() => void exportReport()}
-          disabled={!results}
-          className={`${exportButtonClass} w-full px-4 py-3 text-[11px]`}
-        >
-          <Download className="w-4 h-4" aria-hidden="true" />
-          Descargar PDF
-        </button>
-      </div>
-
       <ProjectAlerts
         dangers={[eventDanger, danger].filter((d) => d !== null)}
         issues={issues}
