@@ -39,6 +39,8 @@ export function screenInput(screen: ScreenSnapshot): ProjectInput {
     voltage: supply.voltage,
     breakerAmps: supply.breakerAmps,
     cableLoopAmps: supply.cableLoopAmps,
+    brightness: screen.operating.brightness,
+    content: screen.operating.content,
   };
 }
 

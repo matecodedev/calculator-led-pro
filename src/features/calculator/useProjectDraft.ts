@@ -1,6 +1,11 @@
 import { useMemo, useState } from 'react';
 
-import { calculateProject, validateProject, type ProjectInput } from '../../domain/calculate';
+import {
+  calculateProject,
+  validateProject,
+  type ContentLevel,
+  type ProjectInput,
+} from '../../domain/calculate';
 import { cabinets, processors, type Cabinet, type Processor } from '../../domain/catalog';
 import type { ScreenSnapshot } from '../../domain/project/snapshot';
 
@@ -48,6 +53,12 @@ export function useProjectDraft(initial?: ScreenSnapshot | null) {
   // several screens, so keeping it here would mean six copies to disagree.
   const [screenName, setScreenName] = useState(initial?.name ?? '');
 
+  // How the screen is actually driven. Full brightness on typical content is
+  // the honest starting point: it is exactly what the catalog's average figure
+  // describes, so nothing is assumed until the technician says otherwise.
+  const [brightness, setBrightness] = useState(initial?.operating.brightness ?? 1);
+  const [content, setContent] = useState<ContentLevel>(initial?.operating.content ?? 'video');
+
   const [calcMode, setCalcMode] = useState<CalcMode>(initial?.target.calcMode ?? 'dimensions');
   const [targetWidthM, setTargetWidthM] = useState(initial?.target.targetWidthM ?? 4);
   const [targetHeightM, setTargetHeightM] = useState(initial?.target.targetHeightM ?? 2.5);
@@ -93,6 +104,8 @@ export function useProjectDraft(initial?: ScreenSnapshot | null) {
       voltage,
       breakerAmps,
       cableLoopAmps,
+      brightness,
+      content,
     }),
     [
       calcMode,
@@ -105,6 +118,8 @@ export function useProjectDraft(initial?: ScreenSnapshot | null) {
       voltage,
       breakerAmps,
       cableLoopAmps,
+      brightness,
+      content,
     ],
   );
 
@@ -165,6 +180,7 @@ export function useProjectDraft(initial?: ScreenSnapshot | null) {
       cableLoopAmps,
       setCableLoopAmps,
     },
+    operating: { brightness, setBrightness, content, setContent },
     /** This hook's share of the saved document. */
     snapshotSlice: {
       name: screenName,
@@ -180,6 +196,7 @@ export function useProjectDraft(initial?: ScreenSnapshot | null) {
         custom: customProcessor,
       },
       supply: { voltage, pduCapacityAmps, breakerAmps, cableLoopAmps },
+      operating: { brightness, content },
     },
     input,
     issues,
@@ -192,4 +209,5 @@ export type CabinetChoice = ProjectDraft['cabinetChoice'];
 export type ProcessorChoice = ProjectDraft['processorChoice'];
 export type TargetControls = ProjectDraft['target'];
 export type SupplyControls = ProjectDraft['supply'];
+export type OperatingControls = ProjectDraft['operating'];
 export type ProjectIdentity = ProjectDraft['identity'];

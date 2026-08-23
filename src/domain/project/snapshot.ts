@@ -9,6 +9,7 @@
  */
 
 import type { Cabinet, Processor } from '../catalog';
+import { CONTENT_LEVELS, type ContentLevel } from '../electrical/load';
 import type { CableLayer } from '../routing/palette';
 import {
   MAINS_POLICIES,
@@ -52,6 +53,11 @@ export interface ScreenSnapshot {
     breakerAmps: number;
     cableLoopAmps: number;
   };
+  /**
+   * How hard the screen is driven. Circuits are never sized from this; it
+   * answers what to ask the venue for, not what breaker to fit.
+   */
+  operating: { brightness: number; content: ContentLevel };
   routing: {
     layer: CableLayer;
     priority: RoutingPriority;
@@ -193,6 +199,16 @@ function parseScreen(
   // and auto routing is derived, so nothing hand-drawn changes underneath them.
   const mains = isOneOf(routing.mains, MAINS_POLICIES) ? routing.mains : 'start-edge';
 
+  // Documents written before brightness was a setting were all implicitly run
+  // at full brightness on typical content, which is exactly what the catalog's
+  // average figure describes. Nothing they already trusted changes.
+  const operating = isRecord(value.operating) ? value.operating : {};
+  const brightness =
+    isFiniteNumber(operating.brightness) && operating.brightness > 0 && operating.brightness <= 1
+      ? operating.brightness
+      : 1;
+  const content = isOneOf(operating.content, CONTENT_LEVELS) ? operating.content : 'video';
+
   const manualData = parseRuns(routing.manualData);
   const manualPower = parseRuns(routing.manualPower);
   if (!manualData || !manualPower) return null;
@@ -212,6 +228,7 @@ function parseScreen(
       custom: customProcessor,
     },
     supply: { voltage, pduCapacityAmps, breakerAmps, cableLoopAmps },
+    operating: { brightness, content },
     routing: {
       layer: routing.layer,
       priority: routing.priority,

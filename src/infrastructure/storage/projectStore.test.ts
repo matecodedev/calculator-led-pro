@@ -63,6 +63,7 @@ const screen = {
     },
   },
   supply: { voltage: 220, pduCapacityAmps: 96, breakerAmps: 16, cableLoopAmps: 16 },
+  operating: { brightness: 1, content: 'video' },
   routing: {
     layer: 'data',
     priority: 'vertical',
