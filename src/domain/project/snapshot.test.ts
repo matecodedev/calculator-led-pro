@@ -45,6 +45,7 @@ const snapshot: ProjectSnapshot = {
     layer: 'data',
     priority: 'vertical',
     start: 'bottom-left',
+    mains: 'start-edge',
     mode: 'manual',
     manualData: [
       [
@@ -119,6 +120,24 @@ describe('parseSnapshot', () => {
     expect(migrated?.supply.voltage).toBe(LEGACY_LINE_VOLTAGE);
     expect(migrated?.supply.pduCapacityAmps).toBe(96);
     expect(migrated?.routing.manualData).toEqual(snapshot.routing.manualData);
+  });
+
+  it('defaults a snapshot saved before mains were a choice', () => {
+    // Unlike the voltage migration, this one does NOT preserve the old
+    // behaviour. A run beginning halfway up the screen was a defect in how the
+    // snake was sliced, not a plan anyone drew, and auto routing is derived, so
+    // nothing hand-drawn moves underneath the technician.
+    const { routing, ...rest } = snapshot;
+    const { mains: _dropped, ...routingWithoutMains } = routing;
+
+    expect(roundTrip({ ...rest, routing: routingWithoutMains })?.routing.mains).toBe('start-edge');
+  });
+
+  it('rejects a snapshot whose mains policy is not one we know', () => {
+    expect(
+      roundTrip({ ...snapshot, routing: { ...snapshot.routing, mains: 'sideways' } })?.routing
+        .mains,
+    ).toBe('start-edge');
   });
 
   it('rejects a version 1 snapshot that is broken in some other way', () => {

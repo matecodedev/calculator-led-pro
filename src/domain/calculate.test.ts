@@ -54,23 +54,20 @@ describe('calculateProject', () => {
     expect(result.maxPowerW).toBe(6400);
     expect(result.maxAmps).toBeCloseTo(29.09, 2);
     expect(result.cabinetsPerPowerCable).toBe(17);
-    expect(result.powerCablesNeeded).toBe(3);
   });
 
   it('reports the data distribution', () => {
     expect(result.cabinetsPerDataPort).toBe(23);
-    expect(result.dataCablesNeeded).toBe(2);
-    expect(result.processorsNeeded).toBe(1);
   });
 
-  it('needs a second processor once the ports run out', () => {
-    const wide = calculateProject({
-      ...input,
-      target: { mode: 'count', cols: 40, rows: 20 },
-    });
-
-    expect(wide.dataCablesNeeded).toBe(35);
-    expect(wide.processorsNeeded).toBe(4);
+  it('leaves the cable and processor count to the routing', () => {
+    // How many cables a screen needs depends on how the runs fall over the
+    // grid, which this calculation cannot see. Dividing the cabinet count by
+    // the loop capacity printed three data cables under a four-cable drawing,
+    // so the number moved to `routing/demand.ts`, which counts the runs.
+    expect(result).not.toHaveProperty('dataCablesNeeded');
+    expect(result).not.toHaveProperty('powerCablesNeeded');
+    expect(result).not.toHaveProperty('processorsNeeded');
   });
 
   it('takes the grid directly when the screen is stated in panels', () => {

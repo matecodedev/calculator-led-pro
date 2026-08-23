@@ -1,6 +1,7 @@
 import { Cpu } from 'lucide-react';
 
 import type { ProjectCalculation } from '../../../domain/calculate';
+import type { RoutingDemand } from '../../../domain/routing/demand';
 import { processors } from '../../../domain/catalog';
 import Field from '../../../shared/ui/Field';
 import SectionHeading from '../../../shared/ui/SectionHeading';
@@ -12,11 +13,13 @@ import AwaitingInput from './AwaitingInput';
 interface ProcessingPanelProps {
   choice: ProcessorChoice;
   results: ProjectCalculation | null;
+  /** Counted off the drawn plan, so the tile and the schematic agree. */
+  demand: RoutingDemand;
 }
 
-export default function ProcessingPanel({ choice, results }: ProcessingPanelProps) {
+export default function ProcessingPanel({ choice, results, demand }: ProcessingPanelProps) {
   const { processor, selectedId, isCustom, custom, select, updateCustom } = choice;
-  const overCapacity = results !== null && results.dataCablesNeeded > processor.dataPorts;
+  const overCapacity = results !== null && demand.dataCables > processor.dataPorts;
 
   return (
     <div className="p-6 border-b border-[#333] bg-[#0F0F0F]">
@@ -81,7 +84,7 @@ export default function ProcessingPanel({ choice, results }: ProcessingPanelProp
           <div className="grid grid-cols-2 gap-4 mt-4">
             <StatTile
               label="Main Data Cables Req."
-              value={results.dataCablesNeeded}
+              value={demand.dataCables}
               tone="data"
               footnote={`~${results.cabinetsPerDataPort} cab / cable`}
             />
@@ -91,15 +94,15 @@ export default function ProcessingPanel({ choice, results }: ProcessingPanelProp
               className={`bg-[#161616] ${overCapacity ? 'border-amber-500' : 'border-[#333]'}`}
               value={
                 <>
-                  {results.processorsNeeded}
+                  {demand.processorsNeeded}
                   <span className="text-xs ml-1 text-neutral-400">units</span>
                 </>
               }
               footnote={
                 overCapacity && (
                   <span className="text-amber-400 font-bold tracking-widest uppercase">
-                    Add {results.processorsNeeded - 1} more processor
-                    {results.processorsNeeded > 2 ? 's' : ''}
+                    Add {demand.processorsNeeded - 1} more processor
+                    {demand.processorsNeeded > 2 ? 's' : ''}
                   </span>
                 )
               }

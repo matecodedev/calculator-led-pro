@@ -38,9 +38,14 @@ export interface ProjectInput {
 export interface ProjectCalculation extends ArrayGeometry, ElectricalLoad {
   /** Cabinets one processor port can drive. */
   cabinetsPerDataPort: number;
-  dataCablesNeeded: number;
-  processorsNeeded: number;
 }
+
+/*
+ * `dataCablesNeeded` and `processorsNeeded` used to live here, divided out of
+ * the cabinet count. See `routing/demand.ts`: how many cables a screen needs
+ * depends on how the runs fall over the grid, which this calculation cannot
+ * know, so it stopped guessing.
+ */
 
 function resolveGrid(target: TargetScreen, cabinet: Cabinet): Grid {
   if (target.mode === 'count') {
@@ -76,14 +81,10 @@ export function calculateProject({
     maxPixelsPerPort: processor.maxPixelsPerPort,
     cabinet,
   });
-  const dataCablesNeeded = Math.ceil(geometry.totalCabinets / cabinetsPerDataPort);
-
   return {
     ...geometry,
     ...electrical,
     cabinetsPerDataPort,
-    dataCablesNeeded,
-    processorsNeeded: Math.ceil(dataCablesNeeded / processor.dataPorts),
   };
 }
 

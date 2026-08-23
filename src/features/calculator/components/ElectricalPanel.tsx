@@ -1,4 +1,5 @@
 import type { ProjectCalculation } from '../../../domain/calculate';
+import type { RoutingDemand } from '../../../domain/routing/demand';
 import Field from '../../../shared/ui/Field';
 import SectionHeading from '../../../shared/ui/SectionHeading';
 import StatTile from '../../../shared/ui/StatTile';
@@ -41,9 +42,11 @@ const POWERCON_OPTIONS = [
 interface ElectricalPanelProps {
   supply: SupplyControls;
   results: ProjectCalculation | null;
+  /** Counted off the drawn plan, so the tile and the schematic agree. */
+  demand: RoutingDemand;
 }
 
-export default function ElectricalPanel({ supply, results }: ElectricalPanelProps) {
+export default function ElectricalPanel({ supply, results, demand }: ElectricalPanelProps) {
   const overCapacity = results !== null && results.maxAmps > supply.pduCapacityAmps;
   const headroomPercent = results
     ? Math.round((1 - results.maxAmps / supply.pduCapacityAmps) * 100)
@@ -126,7 +129,7 @@ export default function ElectricalPanel({ supply, results }: ElectricalPanelProp
           <div className="grid grid-cols-2 gap-4 mt-2">
             <StatTile
               label="Main Power Cables Req."
-              value={results.powerCablesNeeded}
+              value={demand.powerCables}
               tone="power"
               className="bg-black border-[#333]"
               footnote={

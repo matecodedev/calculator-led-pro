@@ -68,6 +68,7 @@ const snapshot: ProjectSnapshot = {
     layer: 'data',
     priority: 'vertical',
     start: 'bottom-left',
+    mains: 'start-edge',
     mode: 'auto',
     manualData: [[]],
     manualPower: [[]],

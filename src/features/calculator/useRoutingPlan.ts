@@ -7,11 +7,35 @@ import type { CableLayer } from '../../domain/routing/palette';
 import {
   planRoutes,
   type GridPosition,
+  type MainsPolicy,
   type RoutingPriority,
   type StartCorner,
 } from '../../domain/routing/serpentine';
 
 export type RoutingMode = 'auto' | 'manual';
+
+/** How many previously-drawn grids keep their routing. */
+const HISTORY_LIMIT = 8;
+
+interface DrawnRoutes {
+  data: GridPosition[][];
+  power: GridPosition[][];
+}
+
+/**
+ * What the last resize did to the hand-drawn routing.
+ *
+ * Both cases are worth saying out loud. Losing cabinets without a word is how
+ * forty taps disappear; getting them back without a word leaves the technician
+ * unsure whether the app recovered or they are looking at a fresh grid.
+ */
+export type ResizeNotice =
+  | { kind: 'dropped'; count: number; restoreGrid: string }
+  | { kind: 'restored'; count: number }
+  | null;
+
+const countCabinets = (routes: DrawnRoutes): number =>
+  [...routes.data, ...routes.power].reduce((total, run) => total + run.length, 0);
 
 /**
  * How the cables run over the grid.
@@ -29,6 +53,7 @@ export function useRoutingPlan(
     initial?.routing.priority ?? 'vertical',
   );
   const [start, setStart] = useState<StartCorner>(initial?.routing.start ?? 'bottom-left');
+  const [mains, setMains] = useState<MainsPolicy>(initial?.routing.mains ?? 'start-edge');
   const [mode, setMode] = useState<RoutingMode>(initial?.routing.mode ?? 'auto');
   const [manualData, setManualData] = useState<GridPosition[][]>(
     initial?.routing.manualData ?? [[]],
@@ -41,44 +66,57 @@ export function useRoutingPlan(
   // grid they were drawn on. That grid comes from `results`, which in
   // 'dimensions' mode also moves with the target size and the chosen cabinet.
   //
-  // Resizing used to discard the whole drawing. Now the cabinets that still
-  // exist survive, the ones that fell outside are reported, and the originals
-  // are held so that undoing the resize brings the drawing back intact.
+  // Resizing used to discard the whole drawing. Then it kept a single previous
+  // grid, which was worse in one specific way: the first resize showed a
+  // recovery promise, so the second one broke a promise the technician had
+  // already learned to trust. "Make it 9x5, no 9x4, no back to 8x5" is one
+  // conversation with a lighting designer, so every grid drawn on is
+  // remembered, not just the last one left.
   const gridSignature = results ? `${results.cols}x${results.rows}` : 'none';
   const [drawnOn, setDrawnOn] = useState(gridSignature);
-  const [stash, setStash] = useState<{
-    signature: string;
-    data: GridPosition[][];
-    power: GridPosition[][];
-  } | null>(null);
-  const [dropped, setDropped] = useState(0);
+  const [history, setHistory] = useState<ReadonlyMap<string, DrawnRoutes>>(new Map());
+  const [notice, setNotice] = useState<ResizeNotice>(null);
 
-  if (drawnOn !== gridSignature) {
-    const returningToStash = stash?.signature === gridSignature;
+  if (results && drawnOn !== gridSignature) {
+    const outgoing: DrawnRoutes = { data: manualData, power: manualPower };
+    const outgoingCount = countCabinets(outgoing);
 
-    if (returningToStash && stash) {
-      setManualData(stash.data);
-      setManualPower(stash.power);
-      setStash(null);
-      setDropped(0);
-    } else if (results) {
+    // Re-inserting moves the grid to the end, so eviction drops whichever grid
+    // has gone longest without being drawn on.
+    const nextHistory = new Map(history);
+    nextHistory.delete(drawnOn);
+    if (outgoingCount > 0) nextHistory.set(drawnOn, outgoing);
+    while (nextHistory.size > HISTORY_LIMIT) {
+      const oldest = nextHistory.keys().next().value;
+      if (oldest === undefined) break;
+      nextHistory.delete(oldest);
+    }
+
+    const remembered = nextHistory.get(gridSignature);
+    if (remembered) {
+      const restored = countCabinets(remembered);
+      setManualData(remembered.data);
+      setManualPower(remembered.power);
+      setNotice(restored > outgoingCount ? { kind: 'restored', count: restored } : null);
+    } else {
       const grid = { cols: results.cols, rows: results.rows };
       const nextData = clampRoutesToGrid(manualData, grid);
       const nextPower = clampRoutesToGrid(manualPower, grid);
       const lost = nextData.dropped + nextPower.dropped;
 
-      if (lost > 0) setStash({ signature: drawnOn, data: manualData, power: manualPower });
       setManualData(nextData.runs.length > 0 ? nextData.runs : [[]]);
       setManualPower(nextPower.runs.length > 0 ? nextPower.runs : [[]]);
-      setDropped(lost);
+      setNotice(lost > 0 ? { kind: 'dropped', count: lost, restoreGrid: drawnOn } : null);
     }
+
+    setHistory(nextHistory);
     setDrawnOn(gridSignature);
   }
 
   /** The automatic serpentine for a given cable capacity. */
   const autoRoutesFor = (capacity: number): GridPosition[][] =>
     results
-      ? planRoutes({ cols: results.cols, rows: results.rows, priority, start, capacity })
+      ? planRoutes({ cols: results.cols, rows: results.rows, priority, start, mains, capacity })
       : [];
 
   /** What the schematic and the PDF should actually draw for one layer. */
@@ -96,24 +134,20 @@ export function useRoutingPlan(
     setPriority,
     start,
     setStart,
+    mains,
+    setMains,
     mode,
     setMode,
     manualData,
     manualPower,
     setManualRoutes: layer === 'data' ? setManualData : setManualPower,
-    /** Raw routes for the active layer, unfiltered, for the legend count. */
-    manualRoutesForActiveLayer: layer === 'data' ? manualData : manualPower,
     autoRoutesFor,
     routesFor,
-    /**
-     * Cabinets dropped by the most recent resize, and the grid to go back to if
-     * the technician wants them returned.
-     */
-    droppedByResize: dropped,
-    restoreGrid: stash?.signature ?? null,
-    dismissDropNotice: () => setDropped(0),
+    /** What the most recent resize did to the drawing, if anything. */
+    resizeNotice: notice,
+    dismissResizeNotice: () => setNotice(null),
     /** This hook's share of the saved document. */
-    snapshotSlice: { layer, priority, start, mode, manualData, manualPower },
+    snapshotSlice: { layer, priority, start, mains, mode, manualData, manualPower },
     /** Replaces both layers with the generated serpentine. */
     fillFromAuto: (dataCapacity: number, powerCapacity: number) => {
       setManualData(autoRoutesFor(dataCapacity));

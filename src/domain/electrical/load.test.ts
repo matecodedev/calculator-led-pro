@@ -75,19 +75,19 @@ describe('calculateElectricalLoad', () => {
     expect(calculateElectricalLoad(input).maxAmps).toBeCloseTo(29.09, 2);
   });
 
-  it('counts the power cables the array needs', () => {
-    // 220 V x 12.8 A = 2816 W -> 17 cabinets per circuit -> 40 / 17 = 3 cables.
+  it('reports how many cabinets one circuit carries', () => {
+    // 220 V x 12.8 A = 2816 W -> 17 cabinets per circuit. How many cables that
+    // takes is the routing's answer, not this one: see `routing/demand.ts`.
     const load = calculateElectricalLoad(input);
 
     expect(load.cabinetsPerPowerCable).toBe(17);
-    expect(load.powerCablesNeeded).toBe(3);
+    expect(load).not.toHaveProperty('powerCablesNeeded');
   });
 
   it('needs no cables for an empty array', () => {
     const load = calculateElectricalLoad({ ...input, totalCabinets: 0 });
 
     expect(load.maxPowerW).toBe(0);
-    expect(load.powerCablesNeeded).toBe(0);
   });
 
   it('rejects a negative cabinet count', () => {

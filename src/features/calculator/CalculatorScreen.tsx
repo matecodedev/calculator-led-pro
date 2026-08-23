@@ -6,6 +6,7 @@ import {
   SNAPSHOT_VERSION,
   type ProjectSnapshot,
 } from '../../domain/project/snapshot';
+import { routingDemand } from '../../domain/routing/demand';
 import { renderProjectReport, reportFilename } from '../../infrastructure/pdf/projectReport';
 import {
   browserStore,
@@ -27,10 +28,28 @@ import ProjectIdentityPanel from './components/ProjectIdentityPanel';
 import RoutingSchematic from './components/RoutingSchematic';
 import TotalOutputPanel from './components/TotalOutputPanel';
 import { useProjectDraft } from './useProjectDraft';
-import { useRoutingPlan } from './useRoutingPlan';
+import { useRoutingPlan, type ResizeNotice } from './useRoutingPlan';
 
 /** How long to wait after the last edit before writing to storage. */
 const AUTOSAVE_DELAY_MS = 500;
+
+const cabinetWord = (count: number) => (count === 1 ? 'cabinet' : 'cabinets');
+
+/** `8x5` reads as a grid, not as a multiplication the technician typed. */
+const describeGrid = (signature: string) => signature.replace('x', ' × ');
+
+function resizeNoticeMessage(notice: NonNullable<ResizeNotice>): string {
+  if (notice.kind === 'restored') {
+    return `${notice.count} hand-drawn ${cabinetWord(notice.count)} restored from the last time this screen was this size.`;
+  }
+  // Naming the grid rather than the field is deliberate: in dimensions mode the
+  // technician typed metres, so "go back to what you typed" would be a lie.
+  return `The screen changed size, so ${notice.count} hand-drawn ${cabinetWord(
+    notice.count,
+  )} no longer exist and were removed from the routing. Set the screen back to ${describeGrid(
+    notice.restoreGrid,
+  )} cabinets and the drawing returns.`;
+}
 
 interface Session {
   /** Bumping this remounts the workspace, which reseeds every field. */
@@ -92,6 +111,19 @@ function CalculatorWorkspace({
   const storageAvailable = browserStore() !== null;
 
   const { results, issues } = draft;
+
+  // What the plan actually costs. This used to be the cabinet count divided by
+  // the loop capacity, computed beside the routing instead of from it, so the
+  // report printed three main data cables over a schematic that drew four.
+  // Guarded on `results`: with a half-typed processor there is no valid port
+  // count to divide by, and the panels show nothing at that point anyway.
+  const demand = results
+    ? routingDemand({
+        dataRuns: plan.routesFor('data'),
+        powerRuns: plan.routesFor('power'),
+        dataPortsPerProcessor: draft.processorChoice.processor.dataPorts,
+      })
+    : { dataCables: 0, powerCables: 0, processorsNeeded: 0 };
 
   // The one hazard in this app that can hurt someone. It gets the global alarm
   // channel, above the fold, on every breakpoint — not a footnote two screens down.
@@ -161,6 +193,7 @@ function CalculatorWorkspace({
         cableLoopAmps: draft.supply.cableLoopAmps,
         dataRoutes: plan.routesFor('data'),
         powerRoutes: plan.routesFor('power'),
+        demand,
       });
       downloadBlob(blob, reportFilename(draft.identity));
       setExportError(null);
@@ -221,12 +254,10 @@ function CalculatorWorkspace({
         issues={issues}
         exportError={exportError}
         notice={
-          plan.droppedByResize > 0
+          plan.resizeNotice
             ? {
-                message: `The grid changed, so ${plan.droppedByResize} hand-drawn ${
-                  plan.droppedByResize === 1 ? 'cabinet' : 'cabinets'
-                } no longer exist and were removed from the routing. Go back to ${plan.restoreGrid} to get the drawing back.`,
-                onDismiss: plan.dismissDropNotice,
+                message: resizeNoticeMessage(plan.resizeNotice),
+                onDismiss: plan.dismissResizeNotice,
               }
             : null
         }
@@ -241,8 +272,8 @@ function CalculatorWorkspace({
         </div>
 
         <div className="grid grid-rows-[auto_1fr]">
-          <ProcessingPanel choice={draft.processorChoice} results={results} />
-          <ElectricalPanel supply={draft.supply} results={results} />
+          <ProcessingPanel choice={draft.processorChoice} results={results} demand={demand} />
+          <ElectricalPanel supply={draft.supply} results={results} demand={demand} />
         </div>
       </section>
 

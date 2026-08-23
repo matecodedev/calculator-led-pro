@@ -44,24 +44,9 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
-        runtimeCaching: [
-          {
-            // Google Fonts stylesheet: use the network when there is one, but
-            // never let its absence block the shell.
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\//,
-            handler: 'StaleWhileRevalidate',
-            options: { cacheName: 'google-fonts-stylesheets' },
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\//,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-files',
-              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-        ],
+        // No runtime caching: the app makes no network requests at all now that
+        // the fonts are self-hosted, so the `woff2` glob above precaches them
+        // like any other asset instead of hoping for a first online load.
       },
       devOptions: { enabled: false },
     }),

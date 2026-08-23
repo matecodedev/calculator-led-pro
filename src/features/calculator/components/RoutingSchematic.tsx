@@ -81,6 +81,7 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
   };
 
   const routedCabinets = runs.reduce((sum, run) => sum + run.length, 0);
+  const overCapacityRuns = runs.filter((run) => run.length > capacity).length;
 
   return (
     <div className="bg-[#111] p-6">
@@ -121,6 +122,25 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
               <span className="w-3 rounded-[1px] bg-current h-1" style={{ color: colors[0] }} />
               <span>Link (max {capacity} cab)</span>
             </div>
+            <div className="flex items-center gap-2">
+              <span
+                className="w-0.5 h-3 rounded-[1px] bg-current opacity-60"
+                style={{ color: colors[0] }}
+              />
+              <span>Main (drops to the floor)</span>
+            </div>
+            {overCapacityRuns > 0 && (
+              <div className="flex items-center gap-2 font-bold text-[#ef4444]">
+                <span
+                  className="w-3 h-1 shrink-0 rounded-[1px]"
+                  style={{
+                    backgroundImage:
+                      'repeating-linear-gradient(to right, currentColor 0 3px, transparent 3px 5px)',
+                  }}
+                />
+                <span>{overCapacityRuns} over capacity (dashed, labelled)</span>
+              </div>
+            )}
             <div className="flex items-center gap-4 sm:border-l sm:border-[#333] sm:pl-4 mt-2 sm:mt-0 text-neutral-400">
               <span>Total cables: {runs.length}</span>
               <span>Total cabs: {cols * rows}</span>
@@ -156,7 +176,12 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
                   : { maxHeight: '70vh', maxWidth: '100%' }
               }
               role="img"
-              aria-label={`${plan.layer} routing over a ${cols} by ${rows} cabinet grid, ${runs.length} cables`}
+              aria-label={
+                `${plan.layer} routing over a ${cols} by ${rows} cabinet grid, ${runs.length} cables` +
+                (overCapacityRuns > 0
+                  ? `, ${overCapacityRuns} over the ${capacity} cabinet limit`
+                  : '')
+              }
             >
               <defs>
                 {[...colors, OVER_CAPACITY_COLOR].map((color, i) => (
@@ -204,7 +229,58 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
                 const first = run[0];
 
                 return (
+                  // Links first, numbers last. SVG paints in document order, so
+                  // emitting the sequence numbers before the cables struck every
+                  // digit through with its own 2.5px stroke.
                   <g key={`run-${i}`}>
+                    {/*
+                     * The main: the feed from the processor or the PDU, which
+                     * are on the ground. Drawn to the floor even when the run
+                     * begins high up, because that is the cable a crew has to
+                     * pull and its length is the thing worth seeing.
+                     */}
+                    {first && (
+                      <g opacity={0.6}>
+                        <line
+                          x1={centreOf(first).x}
+                          y1={centreOf(first).y}
+                          x2={centreOf(first).x}
+                          y2={rows * cellHeight}
+                          stroke={color}
+                          strokeWidth={Math.max(1, Math.min(cellWidth, cellHeight) * 0.025)}
+                        />
+                        <line
+                          x1={centreOf(first).x - cellWidth * 0.15}
+                          y1={rows * cellHeight}
+                          x2={centreOf(first).x + cellWidth * 0.15}
+                          y2={rows * cellHeight}
+                          stroke={color}
+                          strokeWidth={Math.max(2, Math.min(cellWidth, cellHeight) * 0.05)}
+                          strokeLinecap="round"
+                        />
+                      </g>
+                    )}
+
+                    {run.slice(0, -1).map((cabinet, step) => {
+                      const line = shrink(cabinet, run[step + 1]);
+                      const strokeWidth = Math.max(2, Math.min(cellWidth, cellHeight) * 0.05);
+                      return (
+                        <line
+                          key={`link-${i}-${step}`}
+                          {...line}
+                          stroke={color}
+                          strokeWidth={strokeWidth}
+                          strokeLinecap="round"
+                          // A broken line survives a colourblind technician and a
+                          // phone screen in the dark; the colour alone does not.
+                          strokeDasharray={
+                            overCapacity ? `${strokeWidth * 2} ${strokeWidth * 1.5}` : undefined
+                          }
+                          markerEnd={`url(#arrow-${plan.layer}-${markerIndex})`}
+                        />
+                      );
+                    })}
+
                     {first && (
                       <g transform={`translate(${centreOf(first).x}, ${centreOf(first).y})`}>
                         <circle
@@ -222,8 +298,44 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
                           fill={color}
                           fontFamily="monospace"
                         >
-                          {run.length}
+                          {/*
+                           * The first cabinet on the run, so the sequence reads
+                           * 1, 2, 3. It used to print the run's length, which
+                           * made a 20-cabinet run read "20, 2, 3" and gave two
+                           * equally long runs the same label.
+                           */}
+                          1
                         </text>
+
+                        {/*
+                         * Carried-versus-rated, printed on the drawing. The
+                         * schematic is what the crew patches from, so the run
+                         * that will trip has to say so where it is read.
+                         */}
+                        {overCapacity && (
+                          <g>
+                            <rect
+                              x={-24 * scale}
+                              y={9 * scale}
+                              width={48 * scale}
+                              height={15 * scale}
+                              rx={2 * scale}
+                              fill="#1A1A1A"
+                              stroke={OVER_CAPACITY_COLOR}
+                              strokeWidth={Math.max(1, 1.5 * scale)}
+                            />
+                            <text
+                              y={19.5 * scale}
+                              textAnchor="middle"
+                              fontSize={10 * scale}
+                              fontWeight="bold"
+                              fill={OVER_CAPACITY_COLOR}
+                              fontFamily="monospace"
+                            >
+                              {run.length}/{capacity}
+                            </text>
+                          </g>
+                        )}
                       </g>
                     )}
 
@@ -238,25 +350,15 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
                           textAnchor="middle"
                           fontSize={10 * scale}
                           fill={color}
-                          fillOpacity={0.85}
                           fontFamily="monospace"
+                          // A halo in the cell fill keeps the digit readable
+                          // where a cable or an arrowhead passes behind it.
+                          stroke="#111"
+                          strokeWidth={2.5 * scale}
+                          paintOrder="stroke"
                         >
                           {step + 1}
                         </text>
-                      );
-                    })}
-
-                    {run.slice(0, -1).map((cabinet, step) => {
-                      const line = shrink(cabinet, run[step + 1]);
-                      return (
-                        <line
-                          key={`link-${i}-${step}`}
-                          {...line}
-                          stroke={color}
-                          strokeWidth={Math.max(2, Math.min(cellWidth, cellHeight) * 0.05)}
-                          strokeLinecap="round"
-                          markerEnd={`url(#arrow-${plan.layer}-${markerIndex})`}
-                        />
                       );
                     })}
                   </g>

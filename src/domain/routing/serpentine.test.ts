@@ -191,3 +191,185 @@ describe('planRoutes', () => {
     expect(Math.max(...runs.map((r) => r.length))).toBeLessThanOrEqual(7);
   });
 });
+
+describe('planRoutes with mains from the start edge', () => {
+  /** The row a run must begin on for a given corner. */
+  const startRow = (start: StartCorner, rows: number) => (start.includes('bottom') ? rows - 1 : 0);
+
+  it('gives every run its own column rather than slicing one long snake', () => {
+    // The old single-snake slice put run 2 in the middle of the screen and run
+    // 3 at the very top: 7 + 7 + 6 over a 4x5 grid.
+    const runs = planRoutes({
+      cols: 4,
+      rows: 5,
+      priority: 'vertical',
+      start: 'bottom-left',
+      capacity: 7,
+      mains: 'start-edge',
+    });
+
+    expect(runs.map((run) => run.length)).toEqual([5, 5, 5, 5]);
+    expect(runs.map((run) => run[0])).toEqual([
+      { x: 0, y: 4 },
+      { x: 1, y: 4 },
+      { x: 2, y: 4 },
+      { x: 3, y: 4 },
+    ]);
+  });
+
+  it('still packs whole columns into one run when the cable can carry them', () => {
+    const runs = planRoutes({
+      cols: 8,
+      rows: 5,
+      priority: 'vertical',
+      start: 'bottom-left',
+      capacity: 11,
+      mains: 'start-edge',
+    });
+
+    expect(runs.map((run) => run.length)).toEqual([10, 10, 10, 10]);
+    expect(runs.every((run) => run[0].y === 4)).toBe(true);
+  });
+
+  it('snakes back down the second column of a run so the next run starts low', () => {
+    const [run] = planRoutes({
+      cols: 2,
+      rows: 3,
+      priority: 'vertical',
+      start: 'bottom-left',
+      capacity: 6,
+      mains: 'start-edge',
+    });
+
+    expect(run).toEqual([
+      { x: 0, y: 2 },
+      { x: 0, y: 1 },
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+      { x: 1, y: 1 },
+      { x: 1, y: 2 },
+    ]);
+  });
+
+  it.each(START_CORNERS)('starts every run on the %s edge when a column fits a cable', (start) => {
+    const rows = 5;
+    const runs = planRoutes({
+      cols: 7,
+      rows,
+      priority: 'vertical',
+      start,
+      capacity: 6,
+      mains: 'start-edge',
+    });
+
+    expect(runs.every((run) => run[0].y === startRow(start, rows))).toBe(true);
+  });
+
+  it('stacks runs up the column when one column outgrows a single cable', () => {
+    // 10 rows on a 9-cabinet cable. The second run cannot begin at the bottom:
+    // the cabinets it serves are above. Its main is drawn to the floor instead.
+    const runs = planRoutes({
+      cols: 1,
+      rows: 10,
+      priority: 'vertical',
+      start: 'bottom-left',
+      capacity: 9,
+      mains: 'start-edge',
+    });
+
+    expect(runs.map((run) => run.length)).toEqual([5, 5]);
+    expect(runs[0][0]).toEqual({ x: 0, y: 9 });
+    expect(runs[1][0]).toEqual({ x: 0, y: 4 });
+  });
+
+  it('groups whole rows when the priority is horizontal', () => {
+    const runs = planRoutes({
+      cols: 3,
+      rows: 4,
+      priority: 'horizontal',
+      start: 'bottom-left',
+      capacity: 6,
+      mains: 'start-edge',
+    });
+
+    expect(runs.map((run) => run.length)).toEqual([6, 6]);
+    expect(runs[0][0]).toEqual({ x: 0, y: 3 });
+    expect(runs[1][0]).toEqual({ x: 0, y: 1 });
+  });
+
+  it.each(everyLayout())(
+    'begins the first run in the requested corner (%o)',
+    ({ start, priority }) => {
+      // Ordering the lines by the wrong axis put a horizontal top-left plan at
+      // the bottom-left corner, and only this combination exposed it.
+      const [[first]] = planRoutes({
+        cols: 4,
+        rows: 4,
+        priority,
+        start,
+        capacity: 4,
+        mains: 'start-edge',
+      });
+
+      expect(first).toEqual({
+        x: start.includes('right') ? 3 : 0,
+        y: start.includes('bottom') ? 3 : 0,
+      });
+    },
+  );
+
+  it.each(everyLayout())('covers the grid exactly once (%o)', ({ start, priority }) => {
+    const runs = planRoutes({
+      cols: 7,
+      rows: 5,
+      priority,
+      start,
+      capacity: 8,
+      mains: 'start-edge',
+    });
+    const cells = runs.flat();
+
+    expect(cells).toHaveLength(35);
+    expect(new Set(cells.map(key)).size).toBe(35);
+    expect(Math.max(...runs.map((r) => r.length))).toBeLessThanOrEqual(8);
+  });
+
+  it.each(everyLayout())(
+    'keeps every run walking neighbour to neighbour (%o)',
+    ({ start, priority }) => {
+      const runs = planRoutes({
+        cols: 7,
+        rows: 5,
+        priority,
+        start,
+        capacity: 8,
+        mains: 'start-edge',
+      });
+
+      for (const run of runs) {
+        for (let i = 1; i < run.length; i++) {
+          const step = Math.abs(run[i].x - run[i - 1].x) + Math.abs(run[i].y - run[i - 1].y);
+          expect(step).toBe(1);
+        }
+      }
+    },
+  );
+
+  it('leaves the continuous snake untouched', () => {
+    const layout = {
+      cols: 4,
+      rows: 5,
+      priority: 'vertical',
+      start: 'bottom-left',
+      capacity: 7,
+    } as const;
+
+    const continuous = planRoutes({ ...layout, mains: 'continuous' });
+
+    expect(continuous).toEqual(balanceIntoRuns(serpentineSequence(layout), layout.capacity));
+    expect(continuous.map((run) => run.length)).toEqual([7, 7, 6]);
+    // The historical slice is exactly what the new default exists to replace.
+    expect(continuous).not.toEqual(planRoutes(layout));
+    expect(planRoutes(layout).every((run) => run[0].y === layout.rows - 1)).toBe(true);
+  });
+});
