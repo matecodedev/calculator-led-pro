@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Maximize2, Minimize2, Route } from 'lucide-react';
 
 import { cableColors, OVER_CAPACITY_COLOR } from '../../../domain/routing/palette';
@@ -58,6 +58,37 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
     return { x1: a.x + nx, y1: a.y + ny, x2: b.x - nx, y2: b.y - ny };
   };
 
+  const manual = plan.mode === 'manual';
+  const svgRef = useRef<SVGSVGElement>(null);
+  /** The cell the roving tab stop sits on. Runs start at the bottom edge. */
+  const [focusCell, setFocusCell] = useState<GridPosition>({ x: 0, y: rows - 1 });
+  /**
+   * Dragging is hit-tested on the svg, not delegated to each cell.
+   *
+   * A touch pointer is captured by whatever element received `pointerdown`, so
+   * `pointerenter` never fires on the cells the finger crosses — the drag would
+   * have added exactly one cabinet on a phone, which is the device this app is
+   * for. Mapping the pointer into viewBox units works for touch, mouse and pen
+   * alike, and a ref keeps the flag readable without waiting for a render.
+   */
+  const drawingRef = useRef(false);
+  const lastDrawn = useRef<string | null>(null);
+
+  // A run drawn by dragging can end anywhere, including outside the drawing.
+  useEffect(() => {
+    if (!manual) return;
+    const stop = () => {
+      drawingRef.current = false;
+      lastDrawn.current = null;
+    };
+    window.addEventListener('pointerup', stop);
+    window.addEventListener('pointercancel', stop);
+    return () => {
+      window.removeEventListener('pointerup', stop);
+      window.removeEventListener('pointercancel', stop);
+    };
+  }, [manual]);
+
   /** In manual mode, clicking a cabinet appends it to the run being drawn. */
   const toggleCabinet = (x: number, y: number) => {
     if (plan.mode !== 'manual') return;
@@ -78,6 +109,109 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
       runsCopy[last] = [...current, { x, y }];
       return runsCopy;
     });
+  };
+
+  /** Dragging only ever adds; pulling back over a cabinet must not delete it. */
+  const appendCabinet = (x: number, y: number) => {
+    if (!manual) return;
+    plan.setManualRoutes((previous) => {
+      const runsCopy = previous.length > 0 ? [...previous] : [[]];
+      const last = runsCopy.length - 1;
+      if (runsCopy.some((run) => run.some((p) => p.x === x && p.y === y))) return previous;
+      runsCopy[last] = [...runsCopy[last], { x, y }];
+      return runsCopy;
+    });
+  };
+
+  /**
+   * Where each cabinet sits in the drawing. A screen reader hears "column 3,
+   * row 2, position 17 of cable 2" — the same sentence the numbers on the cell
+   * say to everyone else.
+   */
+  const placement = useMemo(() => {
+    const map = new Map<string, { cable: number; step: number }>();
+    runs.forEach((run, i) =>
+      run.forEach((cell, step) => map.set(`${cell.x}-${cell.y}`, { cable: i + 1, step: step + 1 })),
+    );
+    return map;
+  }, [runs]);
+
+  const describeCell = (c: number, r: number) => {
+    const at = placement.get(`${c}-${r}`);
+    const where = `Columna ${c + 1}, fila ${r + 1}`;
+    return at ? `${where}, posición ${at.step} del cable ${at.cable}` : `${where}, sin rutear`;
+  };
+
+  /** Which cabinet the pointer is over, in grid coordinates. */
+  const cellAt = (event: React.PointerEvent): GridPosition | null => {
+    const svg = svgRef.current;
+    const ctm = svg?.getScreenCTM();
+    if (!svg || !ctm) return null;
+
+    const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(ctm.inverse());
+    const x = Math.floor(point.x / cellWidth);
+    const y = Math.floor(point.y / cellHeight);
+    return x < 0 || x >= cols || y < 0 || y >= rows ? null : { x, y };
+  };
+
+  const onGridPointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
+    if (!manual) return;
+    const cell = cellAt(event);
+    if (!cell) return;
+
+    drawingRef.current = true;
+    lastDrawn.current = `${cell.x}-${cell.y}`;
+    svgRef.current?.setPointerCapture(event.pointerId);
+    toggleCabinet(cell.x, cell.y);
+  };
+
+  const onGridPointerMove = (event: React.PointerEvent<SVGSVGElement>) => {
+    if (!manual || !drawingRef.current) return;
+    const cell = cellAt(event);
+    if (!cell) return;
+
+    const key = `${cell.x}-${cell.y}`;
+    if (key === lastDrawn.current) return;
+    lastDrawn.current = key;
+    appendCabinet(cell.x, cell.y);
+  };
+
+  const focusAt = (x: number, y: number) => {
+    setFocusCell({ x, y });
+    svgRef.current?.querySelector<SVGRectElement>(`[data-cell="${x}-${y}"]`)?.focus();
+  };
+
+  const MOVES: Record<string, [number, number]> = {
+    ArrowLeft: [-1, 0],
+    ArrowRight: [1, 0],
+    ArrowUp: [0, -1],
+    ArrowDown: [0, 1],
+  };
+
+  const onCellKeyDown = (event: React.KeyboardEvent, c: number, r: number) => {
+    const move = MOVES[event.key];
+    if (move) {
+      event.preventDefault();
+      focusAt(
+        Math.min(cols - 1, Math.max(0, c + move[0])),
+        Math.min(rows - 1, Math.max(0, r + move[1])),
+      );
+      return;
+    }
+    if (event.key === 'Home') {
+      event.preventDefault();
+      focusAt(0, r);
+      return;
+    }
+    if (event.key === 'End') {
+      event.preventDefault();
+      focusAt(cols - 1, r);
+      return;
+    }
+    if (event.key === ' ' || event.key === 'Enter') {
+      event.preventDefault();
+      toggleCabinet(c, r);
+    }
   };
 
   const routedCabinets = runs.reduce((sum, run) => sum + run.length, 0);
@@ -172,14 +306,22 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
               viewBox={`0 0 ${cols * cellWidth} ${rows * cellHeight}`}
               preserveAspectRatio="xMidYMid meet"
               className="flex-shrink-0"
-              style={
-                fullscreen
-                  ? { maxHeight: '100%', maxWidth: '100%' }
-                  : { maxHeight: '70vh', maxWidth: '100%' }
-              }
-              role="img"
+              style={{
+                maxWidth: '100%',
+                maxHeight: fullscreen ? '100%' : '70vh',
+                // Without this the browser scrolls the page instead of drawing.
+                touchAction: manual ? 'none' : undefined,
+              }}
+              ref={svgRef}
+              onPointerDown={onGridPointerDown}
+              onPointerMove={onGridPointerMove}
+              role={manual ? 'grid' : 'img'}
+              aria-rowcount={manual ? rows : undefined}
+              aria-colcount={manual ? cols : undefined}
               aria-label={
-                `Ruteo de ${plan.layer === 'data' ? 'data' : 'power'} sobre una grilla de ${cols} por ${rows} gabinetes, ${runs.length} cables` +
+                `${manual ? 'Grilla editable de ruteo' : 'Ruteo'} de ${
+                  plan.layer === 'data' ? 'data' : 'power'
+                } sobre ${cols} por ${rows} gabinetes, ${runs.length} cables` +
                 (overCapacityRuns > 0
                   ? `, ${overCapacityRuns} por encima del límite de ${capacity} gabinetes`
                   : '')
@@ -203,26 +345,35 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
                 ))}
               </defs>
 
-              {Array.from({ length: cols }).map((_, c) =>
-                Array.from({ length: rows }).map((_, r) => (
-                  <rect
-                    key={`cell-${c}-${r}`}
-                    x={c * cellWidth}
-                    y={r * cellHeight}
-                    width={cellWidth}
-                    height={cellHeight}
-                    fill="#111"
-                    stroke="#666"
-                    strokeWidth="1"
-                    onClick={() => toggleCabinet(c, r)}
-                    className={
-                      plan.mode === 'manual'
-                        ? 'cursor-pointer hover:fill-[#222] transition-colors'
-                        : ''
-                    }
-                  />
-                )),
-              )}
+              {Array.from({ length: rows }).map((_, r) => (
+                <g key={`row-${r}`} role={manual ? 'row' : undefined}>
+                  {Array.from({ length: cols }).map((_, c) => {
+                    const focused = manual && focusCell.x === c && focusCell.y === r;
+                    return (
+                      <rect
+                        key={`cell-${c}-${r}`}
+                        data-cell={`${c}-${r}`}
+                        x={c * cellWidth}
+                        y={r * cellHeight}
+                        width={cellWidth}
+                        height={cellHeight}
+                        fill="#111"
+                        stroke={focused ? '#CCFF00' : '#666'}
+                        strokeWidth={focused ? 3 : 1}
+                        role={manual ? 'gridcell' : undefined}
+                        // One tab stop for the whole grid; the arrows move
+                        // inside it. Tabbing through 360 cabinets is not
+                        // navigation, it is a trap.
+                        tabIndex={manual ? (focused ? 0 : -1) : undefined}
+                        aria-label={manual ? describeCell(c, r) : undefined}
+                        onFocus={manual ? () => setFocusCell({ x: c, y: r }) : undefined}
+                        onKeyDown={manual ? (event) => onCellKeyDown(event, c, r) : undefined}
+                        className={manual ? 'cursor-pointer hover:fill-[#222]' : ''}
+                      />
+                    );
+                  })}
+                </g>
+              ))}
 
               {runs.map((run, i) => {
                 const overCapacity = run.length > capacity;
