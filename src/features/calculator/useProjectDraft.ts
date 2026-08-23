@@ -75,6 +75,9 @@ export function useProjectDraft(initial?: ScreenSnapshot | null) {
   const [distanceToPowerM, setDistanceToPowerM] = useState<number | null>(
     initial?.install.distanceToPowerM ?? null,
   );
+  const [closestViewerM, setClosestViewerM] = useState<number | null>(
+    initial?.install.closestViewerM ?? null,
+  );
 
   const [calcMode, setCalcMode] = useState<CalcMode>(initial?.target.calcMode ?? 'dimensions');
   const [targetWidthM, setTargetWidthM] = useState(initial?.target.targetWidthM ?? 4);
@@ -206,6 +209,8 @@ export function useProjectDraft(initial?: ScreenSnapshot | null) {
       setDistanceToDataM,
       distanceToPowerM,
       setDistanceToPowerM,
+      closestViewerM,
+      setClosestViewerM,
     },
     /** This hook's share of the saved document. */
     snapshotSlice: {
@@ -224,7 +229,7 @@ export function useProjectDraft(initial?: ScreenSnapshot | null) {
       supply: { voltage, pduCapacityAmps, breakerAmps, cableLoopAmps },
       operating: { brightness, content },
       rigging: { mount, points, pointCapacityKg },
-      install: { trimHeightM, distanceToDataM, distanceToPowerM },
+      install: { trimHeightM, distanceToDataM, distanceToPowerM, closestViewerM },
     },
     input,
     issues,

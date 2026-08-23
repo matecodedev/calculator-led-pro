@@ -38,6 +38,46 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
   const [fullscreen, setFullscreen] = useState(false);
 
   /**
+   * Pan and zoom over the drawing.
+   *
+   * A dense grid draws ten-pixel cabinets, and "Fullscreen" gained sixteen
+   * percent of width on a portrait phone — which is why the numbers on the
+   * schematic were unreadable on the device the app is for. Zoom is the answer
+   * the size of the page cannot give.
+   */
+  const [view, setView] = useState({ scale: 1, x: 0, y: 0 });
+  const pinch = useRef<{ distance: number; scale: number } | null>(null);
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const panFrom = useRef<{ x: number; y: number } | null>(null);
+  const boardW = cols * cellWidth;
+  const boardH = rows * cellHeight;
+  const zoomed = view.scale !== 1 || view.x !== 0 || view.y !== 0;
+  const resetView = () => setView({ scale: 1, x: 0, y: 0 });
+
+  /** Keeps the drawing from being dragged off its own frame. */
+  const clamp = (next: { scale: number; x: number; y: number }) => {
+    const scale = Math.min(6, Math.max(1, next.scale));
+    const spanX = boardW / scale;
+    const spanY = boardH / scale;
+    return {
+      scale,
+      x: Math.min(Math.max(0, next.x), boardW - spanX),
+      y: Math.min(Math.max(0, next.y), boardH - spanY),
+    };
+  };
+
+  const zoomTo = (target: number, atX: number, atY: number) =>
+    setView((previous) => {
+      const scale = Math.min(6, Math.max(1, target));
+      // Hold the point under the fingers still while the scale changes.
+      return clamp({
+        scale,
+        x: atX - (atX - previous.x) * (previous.scale / scale),
+        y: atY - (atY - previous.y) * (previous.scale / scale),
+      });
+    });
+
+  /**
    * Sized in user space, not stroke widths, so the arrowhead stays a direction
    * mark on a continuous line instead of swelling into a chevron per cabinet.
    */
@@ -154,26 +194,91 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
     return x < 0 || x >= cols || y < 0 || y >= rows ? null : { x, y };
   };
 
-  const onGridPointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
-    if (!manual) return;
-    const cell = cellAt(event);
-    if (!cell) return;
+  /** In viewBox units, so pan and zoom arithmetic stays in the drawing's space. */
+  const pointAt = (clientX: number, clientY: number): { x: number; y: number } | null => {
+    const ctm = svgRef.current?.getScreenCTM();
+    if (!ctm) return null;
+    const p = new DOMPoint(clientX, clientY).matrixTransform(ctm.inverse());
+    return { x: p.x, y: p.y };
+  };
 
-    drawingRef.current = true;
-    lastDrawn.current = `${cell.x}-${cell.y}`;
-    svgRef.current?.setPointerCapture(event.pointerId);
-    toggleCabinet(cell.x, cell.y);
+  const onGridPointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
+    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+    // Two fingers are always a pinch, never a stray line across the grid.
+    if (pointers.current.size >= 2) {
+      drawingRef.current = false;
+      const [a, b] = [...pointers.current.values()];
+      pinch.current = { distance: Math.hypot(a.x - b.x, a.y - b.y), scale: view.scale };
+      return;
+    }
+
+    if (manual) {
+      const cell = cellAt(event);
+      if (!cell) return;
+      drawingRef.current = true;
+      lastDrawn.current = `${cell.x}-${cell.y}`;
+      svgRef.current?.setPointerCapture(event.pointerId);
+      toggleCabinet(cell.x, cell.y);
+      return;
+    }
+
+    // Nothing to draw in auto mode, so one finger pans.
+    panFrom.current = { x: event.clientX, y: event.clientY };
   };
 
   const onGridPointerMove = (event: React.PointerEvent<SVGSVGElement>) => {
-    if (!manual || !drawingRef.current) return;
-    const cell = cellAt(event);
-    if (!cell) return;
+    if (pointers.current.has(event.pointerId)) {
+      pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    }
 
-    const key = `${cell.x}-${cell.y}`;
-    if (key === lastDrawn.current) return;
-    lastDrawn.current = key;
-    appendCabinet(cell.x, cell.y);
+    if (pointers.current.size >= 2 && pinch.current) {
+      const [a, b] = [...pointers.current.values()];
+      const distance = Math.hypot(a.x - b.x, a.y - b.y);
+      if (pinch.current.distance > 0) {
+        const centre = pointAt((a.x + b.x) / 2, (a.y + b.y) / 2);
+        const target = pinch.current.scale * (distance / pinch.current.distance);
+        if (centre) zoomTo(target, centre.x, centre.y);
+      }
+      return;
+    }
+
+    if (manual && drawingRef.current) {
+      const cell = cellAt(event);
+      if (!cell) return;
+      const key = `${cell.x}-${cell.y}`;
+      if (key === lastDrawn.current) return;
+      lastDrawn.current = key;
+      appendCabinet(cell.x, cell.y);
+      return;
+    }
+
+    if (!manual && panFrom.current) {
+      // The anchor stays in screen coordinates and the delta is converted with
+      // the live CTM. Holding it in viewBox units meant reading a ref inside the
+      // state updater, which React can run after pointerup has cleared it.
+      const from = panFrom.current;
+      const ctm = svgRef.current?.getScreenCTM();
+      if (!ctm || ctm.a === 0 || ctm.d === 0) return;
+
+      const dx = (event.clientX - from.x) / ctm.a;
+      const dy = (event.clientY - from.y) / ctm.d;
+      panFrom.current = { x: event.clientX, y: event.clientY };
+      setView((previous) => clamp({ ...previous, x: previous.x - dx, y: previous.y - dy }));
+    }
+  };
+
+  const onGridPointerUp = (event: React.PointerEvent<SVGSVGElement>) => {
+    pointers.current.delete(event.pointerId);
+    if (pointers.current.size < 2) pinch.current = null;
+    if (pointers.current.size === 0) panFrom.current = null;
+  };
+
+  /** Ctrl or pinch on a trackpad arrives as a wheel event. */
+  const onGridWheel = (event: React.WheelEvent<SVGSVGElement>) => {
+    if (!event.ctrlKey && !event.metaKey) return;
+    const at = pointAt(event.clientX, event.clientY);
+    if (at) zoomTo(view.scale * (event.deltaY < 0 ? 1.12 : 1 / 1.12), at.x, at.y);
   };
 
   const focusAt = (x: number, y: number) => {
@@ -252,6 +357,15 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
               />
               <span>Inicio del cable</span>
             </div>
+            {zoomed && (
+              <button
+                type="button"
+                onClick={resetView}
+                className="flex items-center gap-2 px-2 py-1 min-h-11 sm:min-h-0 sm:py-1 rounded-sm border border-[#CCFF00] text-[#CCFF00] font-bold uppercase focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#CCFF00]"
+              >
+                Zoom {view.scale.toFixed(1)}× · ver todo
+              </button>
+            )}
             <div className="flex items-center gap-2">
               <span className="w-3 rounded-[1px] bg-current h-1" style={{ color: colors[0] }} />
               <span>Enlace (máx {capacity} gab)</span>
@@ -303,18 +417,22 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
             <svg
               width="100%"
               height="100%"
-              viewBox={`0 0 ${cols * cellWidth} ${rows * cellHeight}`}
+              viewBox={`${view.x} ${view.y} ${boardW / view.scale} ${boardH / view.scale}`}
               preserveAspectRatio="xMidYMid meet"
               className="flex-shrink-0"
               style={{
                 maxWidth: '100%',
                 maxHeight: fullscreen ? '100%' : '70vh',
                 // Without this the browser scrolls the page instead of drawing.
-                touchAction: manual ? 'none' : undefined,
+                touchAction: 'none',
               }}
               ref={svgRef}
               onPointerDown={onGridPointerDown}
               onPointerMove={onGridPointerMove}
+              onPointerUp={onGridPointerUp}
+              onPointerCancel={onGridPointerUp}
+              onPointerLeave={onGridPointerUp}
+              onWheel={onGridWheel}
               role={manual ? 'grid' : 'img'}
               aria-rowcount={manual ? rows : undefined}
               aria-colcount={manual ? cols : undefined}

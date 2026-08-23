@@ -65,7 +65,7 @@ const screen = {
   supply: { voltage: 220, pduCapacityAmps: 96, breakerAmps: 16, cableLoopAmps: 16 },
   operating: { brightness: 1, content: 'video' },
   rigging: { mount: 'flown', points: null, pointCapacityKg: null },
-  install: { trimHeightM: 0, distanceToDataM: null, distanceToPowerM: null },
+  install: { trimHeightM: 0, distanceToDataM: null, distanceToPowerM: null, closestViewerM: null },
   routing: {
     layer: 'data',
     priority: 'vertical',

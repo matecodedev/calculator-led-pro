@@ -34,6 +34,7 @@ import ProjectIdentityPanel from './components/ProjectIdentityPanel';
 import RiggingPanel from './components/RiggingPanel';
 import RoutingSchematic from './components/RoutingSchematic';
 import TotalOutputPanel from './components/TotalOutputPanel';
+import ViewingPanel from './components/ViewingPanel';
 import { useProjectDraft } from './useProjectDraft';
 import { useRoutingPlan, type ResizeNotice } from './useRoutingPlan';
 
@@ -99,7 +100,12 @@ function blankScreen(): ScreenSnapshot {
     supply: { voltage: 220, pduCapacityAmps: 96, breakerAmps: 16, cableLoopAmps: 16 },
     operating: { brightness: 1, content: 'video' },
     rigging: { mount: 'flown', points: null, pointCapacityKg: null },
-    install: { trimHeightM: 0, distanceToDataM: null, distanceToPowerM: null },
+    install: {
+      trimHeightM: 0,
+      distanceToDataM: null,
+      distanceToPowerM: null,
+      closestViewerM: null,
+    },
     routing: {
       layer: 'data',
       priority: 'vertical',
@@ -405,6 +411,7 @@ function ScreenEditor({ initial, eventDanger, exportError, onScreenChange }: Scr
         <div className="border-b xl:border-b-0 xl:border-r border-[#333] flex flex-col">
           <CabinetPanel choice={draft.cabinetChoice} target={draft.target} />
           <TotalOutputPanel results={results} />
+          <ViewingPanel install={draft.install} pitchMm={draft.cabinetChoice.cabinet.pitch} />
         </div>
 
         <div className="grid grid-rows-[auto_1fr]">
