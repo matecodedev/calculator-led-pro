@@ -68,6 +68,11 @@ export function useProjectDraft(initial?: ScreenSnapshot | null) {
     initial?.rigging.pointCapacityKg ?? null,
   );
 
+  const [trimHeightM, setTrimHeightM] = useState(initial?.install.trimHeightM ?? 0);
+  const [distanceToSourceM, setDistanceToSourceM] = useState<number | null>(
+    initial?.install.distanceToSourceM ?? null,
+  );
+
   const [calcMode, setCalcMode] = useState<CalcMode>(initial?.target.calcMode ?? 'dimensions');
   const [targetWidthM, setTargetWidthM] = useState(initial?.target.targetWidthM ?? 4);
   const [targetHeightM, setTargetHeightM] = useState(initial?.target.targetHeightM ?? 2.5);
@@ -191,6 +196,7 @@ export function useProjectDraft(initial?: ScreenSnapshot | null) {
     },
     operating: { brightness, setBrightness, content, setContent },
     rigging: { mount, setMount, points, setPoints, pointCapacityKg, setPointCapacityKg },
+    install: { trimHeightM, setTrimHeightM, distanceToSourceM, setDistanceToSourceM },
     /** This hook's share of the saved document. */
     snapshotSlice: {
       name: screenName,
@@ -208,6 +214,7 @@ export function useProjectDraft(initial?: ScreenSnapshot | null) {
       supply: { voltage, pduCapacityAmps, breakerAmps, cableLoopAmps },
       operating: { brightness, content },
       rigging: { mount, points, pointCapacityKg },
+      install: { trimHeightM, distanceToSourceM },
     },
     input,
     issues,
@@ -222,4 +229,5 @@ export type TargetControls = ProjectDraft['target'];
 export type SupplyControls = ProjectDraft['supply'];
 export type OperatingControls = ProjectDraft['operating'];
 export type RiggingControls = ProjectDraft['rigging'];
+export type InstallControls = ProjectDraft['install'];
 export type ProjectIdentity = ProjectDraft['identity'];

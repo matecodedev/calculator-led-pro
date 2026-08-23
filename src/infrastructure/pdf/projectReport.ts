@@ -442,6 +442,33 @@ export async function renderProjectReport(report: ProjectReport): Promise<Blob> 
       columnStyles: { 1: { halign: 'right' } },
     });
 
+    // A pull sheet: what actually goes in the truck.
+    const declaredDistance = screen.install.distanceToSourceM !== null;
+    const cableRows = (['data', 'power'] as const).flatMap((layer) => {
+      const schedule = plan.cables[layer];
+      const label = layer === 'data' ? 'Data' : 'Power';
+      return [
+        [`${label} · mains`, `${schedule.totalMains}`],
+        [`${label} · jumpers`, `${schedule.totalJumpers}`],
+        ...(declaredDistance
+          ? schedule.mainsByLength.map(({ lengthM, count }) => [
+              `${label} · cable de ${lengthM} m`,
+              `x ${count}`,
+            ])
+          : []),
+      ];
+    });
+
+    autoTable(doc, {
+      ...tableStyles,
+      startY: finalY() + 6,
+      margin: rightCol,
+      tableWidth: colW,
+      head: [['Planilla de cables', '']],
+      body: declaredDistance ? cableRows : [...cableRows, ['Largos', 'Falta la distancia al rack']],
+      columnStyles: { 1: { halign: 'right' } },
+    });
+
     // ------------------------------------------------------- schematics ---
 
     /** Draws the grid and its runs; returns the y to continue from. */

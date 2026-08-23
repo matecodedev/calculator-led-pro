@@ -65,6 +65,12 @@ export interface ScreenSnapshot {
    * to invent a rig it was not told about.
    */
   rigging: { mount: MountMode; points: number | null; pointCapacityKg: number | null };
+  /**
+   * Where the screen sits relative to the rack, which is what turns a cable
+   * count into cable metres. The distance stays null until declared: a main of
+   * unknown length is not a main of zero.
+   */
+  install: { trimHeightM: number; distanceToSourceM: number | null };
   routing: {
     layer: CableLayer;
     priority: RoutingPriority;
@@ -232,6 +238,16 @@ function parseScreen(
       ? riggingRaw.pointCapacityKg
       : null;
 
+  const installRaw = isRecord(value.install) ? value.install : {};
+  const trimHeightM =
+    isFiniteNumber(installRaw.trimHeightM) && installRaw.trimHeightM >= 0
+      ? installRaw.trimHeightM
+      : 0;
+  const distanceToSourceM =
+    isFiniteNumber(installRaw.distanceToSourceM) && installRaw.distanceToSourceM >= 0
+      ? installRaw.distanceToSourceM
+      : null;
+
   const manualData = parseRuns(routing.manualData);
   const manualPower = parseRuns(routing.manualPower);
   if (!manualData || !manualPower) return null;
@@ -253,6 +269,7 @@ function parseScreen(
     supply: { voltage, pduCapacityAmps, breakerAmps, cableLoopAmps },
     operating: { brightness, content },
     rigging: { mount, points, pointCapacityKg },
+    install: { trimHeightM, distanceToSourceM },
     routing: {
       layer: routing.layer,
       priority: routing.priority,
