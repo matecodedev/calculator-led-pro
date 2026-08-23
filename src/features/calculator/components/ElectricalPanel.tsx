@@ -4,7 +4,8 @@ import Field from '../../../shared/ui/Field';
 import SectionHeading from '../../../shared/ui/SectionHeading';
 import StatTile from '../../../shared/ui/StatTile';
 import { selectControlClass } from '../../../shared/ui/controls';
-import type { SupplyControls } from '../useProjectDraft';
+import { CONTENT_LEVELS, type ContentLevel } from '../../../domain/calculate';
+import type { OperatingControls, SupplyControls } from '../useProjectDraft';
 import AwaitingInput from './AwaitingInput';
 
 /**
@@ -44,9 +45,23 @@ interface ElectricalPanelProps {
   results: ProjectCalculation | null;
   /** Counted off the drawn plan, so the tile and the schematic agree. */
   demand: RoutingDemand;
+  /** How the screen is driven. Never sizes a circuit; see the expected tile. */
+  operating: OperatingControls;
 }
 
-export default function ElectricalPanel({ supply, results, demand }: ElectricalPanelProps) {
+const CONTENT_LABELS: Record<ContentLevel, string> = {
+  dark: 'Dark video / low key',
+  video: 'Typical video',
+  bright: 'Bright graphics / logos',
+  white: 'Full white',
+};
+
+export default function ElectricalPanel({
+  supply,
+  results,
+  demand,
+  operating,
+}: ElectricalPanelProps) {
   const overCapacity = results !== null && results.maxAmps > supply.pduCapacityAmps;
   const headroomPercent = results
     ? Math.round((1 - results.maxAmps / supply.pduCapacityAmps) * 100)
@@ -125,6 +140,46 @@ export default function ElectricalPanel({ supply, results, demand }: ElectricalP
           </Field>
         </div>
 
+        {/*
+         * Brightness and content change what the screen draws in the room, and
+         * nothing about what protects it. The tile below says so out loud,
+         * because a technician who sizes a breaker off this number trips it on
+         * the first white frame.
+         */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label={`Brightness · ${Math.round(operating.brightness * 100)}%`}>
+            {(id) => (
+              <input
+                id={id}
+                type="range"
+                min="10"
+                max="100"
+                step="5"
+                value={Math.round(operating.brightness * 100)}
+                onChange={(e) => operating.setBrightness(Number(e.target.value) / 100)}
+                className="w-full min-h-11 accent-[#CCFF00] cursor-pointer"
+              />
+            )}
+          </Field>
+
+          <Field label="Content">
+            {(id) => (
+              <select
+                id={id}
+                value={operating.content}
+                onChange={(e) => operating.setContent(e.target.value as ContentLevel)}
+                className={`${selectControlClass('red')} text-[11px]`}
+              >
+                {CONTENT_LEVELS.map((level) => (
+                  <option key={level} value={level}>
+                    {CONTENT_LABELS[level]}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
+        </div>
+
         {results ? (
           <div className="grid grid-cols-2 gap-4 mt-2">
             <StatTile
@@ -171,6 +226,25 @@ export default function ElectricalPanel({ supply, results, demand }: ElectricalP
           </div>
         ) : (
           <AwaitingInput />
+        )}
+
+        {results && (
+          <div className="border border-[#333] bg-[#0F0F0F] p-3 font-mono text-[11px] uppercase">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span className="text-neutral-400">Expected draw as run</span>
+              <span className="font-bold text-[#7FD4E8]">{results.expectedAmps.toFixed(1)} A</span>
+              <span className="text-neutral-500">
+                {(results.expectedPowerW / 1000).toFixed(1)} kW ·{' '}
+                {Math.round(operating.brightness * 100)}% · {CONTENT_LABELS[operating.content]}
+              </span>
+            </div>
+            <p className="mt-2 border-t border-[#333] pt-2 text-neutral-500 normal-case">
+              Ask the venue or the generator for this. Breakers, cables and cabinets per circuit are
+              sized on the {results.maxAmps.toFixed(1)} A peak above, because a white frame draws
+              it. Excludes the fixed overhead that does not dim — receiving cards, fans, driver
+              idle.
+            </p>
+          </div>
         )}
       </div>
     </div>

@@ -410,7 +410,12 @@ function ScreenEditor({ initial, eventName, eventDanger, onScreenChange }: Scree
 
         <div className="grid grid-rows-[auto_1fr]">
           <ProcessingPanel choice={draft.processorChoice} results={results} demand={demand} />
-          <ElectricalPanel supply={draft.supply} results={results} demand={demand} />
+          <ElectricalPanel
+            supply={draft.supply}
+            results={results}
+            demand={demand}
+            operating={draft.operating}
+          />
         </div>
       </section>
 
