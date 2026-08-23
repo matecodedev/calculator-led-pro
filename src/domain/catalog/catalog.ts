@@ -82,17 +82,21 @@ export const processors: Processor[] = [
 
 export const cabinets: Cabinet[] = [
   {
+    // The id is this app's own key, not a SKU, and saved projects reference it.
     id: 'a_nt29',
     brand: 'Absen',
-    model: 'NT2.9 V2',
+    model: 'NT2.9 Indoor',
     pitch: 2.97,
     width: 500,
     height: 500,
     resX: 168,
     resY: 168,
-    maxPower: 160,
-    avgPower: 53,
-    weight: 8.5,
+    // The datasheet publishes 498 W/m2 peak and 166 W/m2 average. A 500 x 500
+    // cabinet is 0.25 m2: 124.5 W and 41.5 W, rounded.
+    maxPower: 125,
+    avgPower: 42,
+    weight: 7.5,
+    spec: { source: 'Absen, ficha técnica NT2.9 Indoor', checkedOn: '2026-08-23' },
   },
   {
     id: '4b',

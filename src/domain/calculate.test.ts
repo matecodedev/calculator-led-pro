@@ -2,10 +2,15 @@ import { describe, expect, it } from 'vitest';
 import type { Cabinet, Processor } from './catalog';
 import { calculateProject, validateProject, type ProjectInput } from './calculate';
 
+/**
+ * Round numbers chosen to make the arithmetic checkable by hand. Deliberately
+ * not a real product: a fixture wearing a manufacturer's name invites someone
+ * to read its figures as a specification.
+ */
 const cabinet: Cabinet = {
-  id: 'a_nt29',
-  brand: 'Absen',
-  model: 'NT2.9 V2',
+  id: 'test_cabinet',
+  brand: 'Test',
+  model: 'Fixture 500',
   pitch: 2.97,
   width: 500,
   height: 500,
