@@ -2,6 +2,7 @@ import { Network, Zap } from 'lucide-react';
 
 import {
   START_CORNERS,
+  type MainsPolicy,
   type RoutingPriority,
   type StartCorner,
 } from '../../../domain/routing/serpentine';
@@ -112,6 +113,20 @@ export default function RoutingToolbar({ plan, onAutoFill }: RoutingToolbarProps
                 {cornerLabel(corner)}
               </option>
             ))}
+          </select>
+        )}
+      </Field>
+
+      <Field label="Mains">
+        {(id) => (
+          <select
+            id={id}
+            value={plan.mains}
+            onChange={(e) => plan.setMains(e.target.value as MainsPolicy)}
+            className={`${selectControlClass('lime')} text-[11px]`}
+          >
+            <option value="start-edge">Every cable from the edge</option>
+            <option value="continuous">One continuous snake</option>
           </select>
         )}
       </Field>

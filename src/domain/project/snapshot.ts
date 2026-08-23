@@ -7,8 +7,10 @@
 import type { Cabinet, Processor } from '../catalog';
 import type { CableLayer } from '../routing/palette';
 import {
+  MAINS_POLICIES,
   START_CORNERS,
   type GridPosition,
+  type MainsPolicy,
   type RoutingPriority,
   type StartCorner,
 } from '../routing/serpentine';
@@ -50,6 +52,7 @@ export interface ProjectSnapshot {
     layer: CableLayer;
     priority: RoutingPriority;
     start: StartCorner;
+    mains: MainsPolicy;
     mode: RoutingMode;
     manualData: GridPosition[][];
     manualPower: GridPosition[][];
@@ -155,6 +158,12 @@ export function parseSnapshot(value: unknown): ProjectSnapshot | null {
   if (!isOneOf(routing.start, START_CORNERS)) return null;
   if (!isOneOf(routing.mode, ['auto', 'manual'] as const)) return null;
 
+  // Snapshots written before mains were a choice carry no field. They default
+  // to the new behaviour rather than the old one: a run starting halfway up the
+  // screen was a defect in the slicing, never something a technician asked for,
+  // and auto routing is derived, so nothing hand-drawn changes underneath them.
+  const mains = isOneOf(routing.mains, MAINS_POLICIES) ? routing.mains : 'start-edge';
+
   const manualData = parseRuns(routing.manualData);
   const manualPower = parseRuns(routing.manualPower);
   if (!manualData || !manualPower) return null;
@@ -179,6 +188,7 @@ export function parseSnapshot(value: unknown): ProjectSnapshot | null {
       layer: routing.layer,
       priority: routing.priority,
       start: routing.start,
+      mains,
       mode: routing.mode,
       manualData,
       manualPower,

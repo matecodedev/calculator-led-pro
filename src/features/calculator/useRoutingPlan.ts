@@ -7,6 +7,7 @@ import type { CableLayer } from '../../domain/routing/palette';
 import {
   planRoutes,
   type GridPosition,
+  type MainsPolicy,
   type RoutingPriority,
   type StartCorner,
 } from '../../domain/routing/serpentine';
@@ -52,6 +53,7 @@ export function useRoutingPlan(
     initial?.routing.priority ?? 'vertical',
   );
   const [start, setStart] = useState<StartCorner>(initial?.routing.start ?? 'bottom-left');
+  const [mains, setMains] = useState<MainsPolicy>(initial?.routing.mains ?? 'start-edge');
   const [mode, setMode] = useState<RoutingMode>(initial?.routing.mode ?? 'auto');
   const [manualData, setManualData] = useState<GridPosition[][]>(
     initial?.routing.manualData ?? [[]],
@@ -114,7 +116,7 @@ export function useRoutingPlan(
   /** The automatic serpentine for a given cable capacity. */
   const autoRoutesFor = (capacity: number): GridPosition[][] =>
     results
-      ? planRoutes({ cols: results.cols, rows: results.rows, priority, start, capacity })
+      ? planRoutes({ cols: results.cols, rows: results.rows, priority, start, mains, capacity })
       : [];
 
   /** What the schematic and the PDF should actually draw for one layer. */
@@ -132,6 +134,8 @@ export function useRoutingPlan(
     setPriority,
     start,
     setStart,
+    mains,
+    setMains,
     mode,
     setMode,
     manualData,
@@ -143,7 +147,7 @@ export function useRoutingPlan(
     resizeNotice: notice,
     dismissResizeNotice: () => setNotice(null),
     /** This hook's share of the saved document. */
-    snapshotSlice: { layer, priority, start, mode, manualData, manualPower },
+    snapshotSlice: { layer, priority, start, mains, mode, manualData, manualPower },
     /** Replaces both layers with the generated serpentine. */
     fillFromAuto: (dataCapacity: number, powerCapacity: number) => {
       setManualData(autoRoutesFor(dataCapacity));

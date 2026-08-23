@@ -122,6 +122,13 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
               <span className="w-3 rounded-[1px] bg-current h-1" style={{ color: colors[0] }} />
               <span>Link (max {capacity} cab)</span>
             </div>
+            <div className="flex items-center gap-2">
+              <span
+                className="w-0.5 h-3 rounded-[1px] bg-current opacity-60"
+                style={{ color: colors[0] }}
+              />
+              <span>Main (drops to the floor)</span>
+            </div>
             {overCapacityRuns > 0 && (
               <div className="flex items-center gap-2 font-bold text-[#ef4444]">
                 <span
@@ -226,6 +233,34 @@ export default function RoutingSchematic({ plan, screen }: RoutingSchematicProps
                   // emitting the sequence numbers before the cables struck every
                   // digit through with its own 2.5px stroke.
                   <g key={`run-${i}`}>
+                    {/*
+                     * The main: the feed from the processor or the PDU, which
+                     * are on the ground. Drawn to the floor even when the run
+                     * begins high up, because that is the cable a crew has to
+                     * pull and its length is the thing worth seeing.
+                     */}
+                    {first && (
+                      <g opacity={0.6}>
+                        <line
+                          x1={centreOf(first).x}
+                          y1={centreOf(first).y}
+                          x2={centreOf(first).x}
+                          y2={rows * cellHeight}
+                          stroke={color}
+                          strokeWidth={Math.max(1, Math.min(cellWidth, cellHeight) * 0.025)}
+                        />
+                        <line
+                          x1={centreOf(first).x - cellWidth * 0.15}
+                          y1={rows * cellHeight}
+                          x2={centreOf(first).x + cellWidth * 0.15}
+                          y2={rows * cellHeight}
+                          stroke={color}
+                          strokeWidth={Math.max(2, Math.min(cellWidth, cellHeight) * 0.05)}
+                          strokeLinecap="round"
+                        />
+                      </g>
+                    )}
+
                     {run.slice(0, -1).map((cabinet, step) => {
                       const line = shrink(cabinet, run[step + 1]);
                       const strokeWidth = Math.max(2, Math.min(cellWidth, cellHeight) * 0.05);
