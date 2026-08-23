@@ -11,6 +11,8 @@ const screen = (name: string, over: Partial<ScreenTotals> = {}): ScreenTotals =>
   weightKg: 510,
   maxPowerW: 9600,
   maxAmps: 43.64,
+  expectedPowerW: 3180,
+  expectedAmps: 14.45,
   dataCables: 4,
   powerCables: 5,
   processors: 1,
