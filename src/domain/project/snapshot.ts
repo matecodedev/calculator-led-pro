@@ -80,6 +80,8 @@ export interface ScreenSnapshot {
     trimHeightM: number;
     distanceToDataM: number | null;
     distanceToPowerM: number | null;
+    /** Where the nearest seat is, for judging the pitch. Null until declared. */
+    closestViewerM: number | null;
   };
   routing: {
     layer: CableLayer;
@@ -262,6 +264,7 @@ function parseScreen(
   const legacyDistance = installRaw.distanceToSourceM;
   const distanceToDataM = readDistance(installRaw.distanceToDataM, legacyDistance);
   const distanceToPowerM = readDistance(installRaw.distanceToPowerM, legacyDistance);
+  const closestViewerM = readDistance(installRaw.closestViewerM, null);
 
   const manualData = parseRuns(routing.manualData);
   const manualPower = parseRuns(routing.manualPower);
@@ -284,7 +287,7 @@ function parseScreen(
     supply: { voltage, pduCapacityAmps, breakerAmps, cableLoopAmps },
     operating: { brightness, content },
     rigging: { mount, points, pointCapacityKg },
-    install: { trimHeightM, distanceToDataM, distanceToPowerM },
+    install: { trimHeightM, distanceToDataM, distanceToPowerM, closestViewerM },
     routing: {
       layer: routing.layer,
       priority: routing.priority,
