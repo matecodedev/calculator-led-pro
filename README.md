@@ -1,141 +1,332 @@
+<div align="center">
+
+<img src="public/icons/icon-192.png" alt="Calculator Led Pro" width="120" height="120">
+
 # Calculator Led Pro
 
-**A field calculator for LED screen technicians working live events.** Built for a phone, in a dark venue, at arm's length, in a hurry.
+**Calculadora de campo para técnicos de pantallas LED.**
 
-![React 19](https://img.shields.io/badge/React-19-1f1f1f?logo=react)
-![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-1f1f1f?logo=typescript)
-![Vite 6](https://img.shields.io/badge/Vite-6-1f1f1f?logo=vite)
-![Tailwind 4](https://img.shields.io/badge/Tailwind-4-1f1f1f?logo=tailwindcss)
-![Offline first](https://img.shields.io/badge/offline-first-CCFF00?labelColor=1f1f1f)
-![MIT licence](https://img.shields.io/badge/licence-MIT-1f1f1f)
+Decile qué pantalla necesitás y te devuelve cuántos gabinetes entran, cuánto pesa,
+cuánta corriente consume, cuántos cables hacen falta y cómo rutearlos — con el
+esquemático dibujado y el parte de trabajo en PDF.
 
-Pick a cabinet model, state the screen in metres or in panels, and the app returns the array geometry, resolution, weight, peak electrical load, the cables and processors the build needs, and a cable routing schematic over the panel grid — then exports the whole thing as a PDF work order.
+<br>
 
-No accounts, no backend, no network. It installs as a PWA and works with the radio off, because a venue has no usable signal and a cache miss is a dead tool rather than a slow one.
+![PWA](https://img.shields.io/badge/Funciona-sin%20internet-CCFF00?style=for-the-badge&logoColor=black)
+![React](https://img.shields.io/badge/React-19-1c212a?style=for-the-badge&logo=react&logoColor=61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-1c212a?style=for-the-badge&logo=typescript&logoColor=3178C6)
+![Vite](https://img.shields.io/badge/Vite-6-1c212a?style=for-the-badge&logo=vite&logoColor=B73BFE)
 
-**Use it at [matecode.dev](https://matecode.dev)** — open it once with signal, then add it to your home screen and it keeps working without one.
+![Licencia](https://img.shields.io/badge/licencia-MIT-ffb020?style=for-the-badge)
+![Tests](https://img.shields.io/badge/tests-211%20passing-1c212a?style=for-the-badge)
+![Backend](https://img.shields.io/badge/backend-ninguno-1c212a?style=for-the-badge)
+
+<br>
+
+### [🖥️ &nbsp; Abrir Calculator Led Pro](https://calculator-led-pro.netlify.app)
+
+<sub>Gratis · Funciona sin señal · No hace falta instalar nada ni crear cuenta</sub>
+
+</div>
 
 ---
 
-## Quick start
+## Qué es
 
-Requires Node.js 20 or newer.
+Es la cuenta que hacés en el piso, antes de colgar una pantalla, hecha en el
+teléfono en lugar de a mano en una libreta.
+
+Elegís el modelo de gabinete, decís qué pantalla querés —**en metros o en
+paneles**— y la app te devuelve todo lo que necesitás para armarla y para pedir el
+material:
+
+Cuántos gabinetes entran y en qué grilla. Cuánto mide y cuánto pesa en total. Qué
+resolución da. Cuánta corriente consume y si tu alimentación aguanta. Cuántos
+cables de data y de power hay que llevar. Cuántos procesadores. Y el **ruteo
+dibujado sobre la grilla**, cable por cable, para que el equipo patchee mirando un
+dibujo en vez de contando gabinetes con el dedo.
+
+Después exportás todo en PDF y se lo pasás al rigger, al eléctrico o al cliente.
+
+**Está pensada para el teléfono, en un venue oscuro, a un brazo de distancia y con
+apuro.** Por eso es verde sobre negro: una app blanca en una sala a oscuras te
+arruina la visión nocturna.
+
+> [!WARNING]
+> Los números son **cifras de planificación, no reemplazan a un electricista.**
+> La app calcula con los datos que le cargás; si el gabinete o la instalación no
+> son los que declaraste, el resultado tampoco lo es.
+
+<br>
+
+<div align="center">
+
+|                                 |                                                                                         |
+| ------------------------------- | --------------------------------------------------------------------------------------- |
+| 📶 **Funciona sin señal**       | Se instala en el teléfono y anda con el modo avión puesto                               |
+| ⚡ **Te avisa si te pasás**     | Si el consumo supera la alimentación, aparece una alarma imposible de ignorar           |
+| 🔌 **Los mains salen del piso** | El ruteo automático arranca cada cable desde abajo, que es de donde sale en la realidad |
+| ✏️ **Ruteo a mano**             | Si el automático no te sirve, dibujás vos el recorrido tocando gabinete por gabinete    |
+| 💾 **No perdés el trabajo**     | Se guarda solo mientras escribís y vuelve como lo dejaste                               |
+| 📄 **Parte de trabajo en PDF**  | Todas las tablas más los dos esquemáticos, listo para mandar                            |
+
+</div>
+
+---
+
+## Contenido
+
+**Para usar la app**
+
+- [Cómo se usa](#cómo-se-usa)
+- [Qué te dice](#qué-te-dice)
+- [Cómo se lee el esquemático](#cómo-se-lee-el-esquemático)
+- [Usarla sin internet](#usarla-sin-internet)
+- [La letra chica de los números](#la-letra-chica-de-los-números)
+
+**Para tocar el código**
+
+- [Correr el proyecto](#correr-el-proyecto)
+- [Cómo está armado](#cómo-está-armado)
+- [Decisiones de diseño](#decisiones-de-diseño)
+- [Scripts](#scripts)
+- [Contribuir](#contribuir)
+
+---
+
+## Cómo se usa
+
+No hace falta saber programar ni instalar nada. Es una página web que funciona
+como una app.
+
+1. **[Abrir la app](https://calculator-led-pro.netlify.app)** en el teléfono o en
+   la computadora.
+2. **Ponerle nombre** al evento y a la pantalla. Es lo que después sale impreso en
+   el PDF, así que si manejás tres pantallas en un mismo show, ponele nombres que
+   las distingan.
+3. **Elegir el gabinete** de la lista. Si el tuyo no está, cargás las medidas y la
+   potencia a mano.
+4. **Decir qué pantalla querés.** Dos formas: _por metros_ (querés 5 × 3 m y la
+   app redondea a la cantidad de paneles que entra) o _por cantidad de paneles_
+   (ya sabés que son 10 × 6).
+5. **Cargar tu alimentación**: el voltaje de la zona, la capacidad del PDU, el
+   térmico por línea y el powerCON.
+6. **Mirar el ruteo** más abajo y, si querés, cambiar la prioridad, la esquina de
+   arranque o dibujarlo a mano.
+7. **Descargar el PDF.**
+
+Todo se guarda solo. Podés cerrar la pestaña y volver más tarde: vuelve como lo
+dejaste. Con **Guardar pantalla** le ponés nombre y te queda archivada, para
+comparar varias en el mismo evento.
+
+---
+
+## Qué te dice
+
+| Sección                       | Qué te resuelve                                                                                                                         |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **Dimensión y gabinete**      | La grilla que sale (columnas × filas) y la medida real que ocupa                                                                        |
+| **Salida total**              | Gabinetes totales, medida física, peso y resolución en píxeles                                                                          |
+| **Procesamiento**             | Cuántos gabinetes entran por puerto, cuántos cables de data y cuántos procesadores                                                      |
+| **Infraestructura eléctrica** | Consumo pico, corriente al voltaje que declaraste, cuántos gabinetes por circuito, cuántos cables de power y **cuánto margen te queda** |
+| **Esquemático de ruteo**      | El recorrido de cada cable dibujado sobre la grilla, para data y para power                                                             |
+
+### Las dos alarmas
+
+No son lo mismo y por eso no comparten color:
+
+**🔴 Rojo, banner arriba de todo — peligro físico.** El consumo supera lo que da
+tu alimentación. Eso es un térmico que salta en pleno show o un conector que se
+recalienta. Te dice cuánto pedís, a qué voltaje y cuánto tenés.
+
+**🟠 Ámbar — revisá un dato.** Falta un valor o hay algo mal cargado. Molesto, no
+peligroso.
+
+Y cuando está todo bien, **también te lo dice**: `Dentro de capacidad · 70% de
+margen`. Que no haya rojo no alcanza como confirmación en una sala oscura.
+
+---
+
+## Cómo se lee el esquemático
+
+Cada color es un cable distinto. Los números adentro de los gabinetes son el orden
+en que ese cable los va tocando: `1` es el primero de la línea, `2` el siguiente,
+y así.
+
+- **El círculo con el `1`** es donde arranca el cable.
+- **La línea fina que baja hasta el borde** es el _main_: el cable que va desde el
+  procesador o el PDU hasta el primer gabinete. Siempre se dibuja bajando al piso,
+  porque de ahí sale en la realidad.
+- **Línea punteada y roja con un número tipo `24/17`** significa que ese cable
+  lleva más gabinetes de los que soporta. El primer número es lo que le cargaste,
+  el segundo lo que aguanta. **Eso hay que corregirlo.**
+
+Arriba tenés dos capas: **Data** y **Power**. Se rutean distinto porque las
+capacidades son distintas, así que miralas por separado.
+
+Con **Manual** dibujás vos: tocás los gabinetes en el orden que querés, _Nueva
+línea_ empieza otro cable y _Deshacer_ saca el último. Si el automático te dejó
+algo raro, _Auto-Path_ te rellena y desde ahí lo corregís a mano.
+
+---
+
+## Usarla sin internet
+
+Un venue no tiene señal usable. La app está hecha para eso.
+
+**Abrila una vez con internet** y después agregala a la pantalla de inicio:
+
+- **iPhone:** botón de compartir → _Agregar a inicio_
+- **Android:** menú de Chrome → _Instalar app_ / _Agregar a pantalla principal_
+
+Desde ahí funciona con el modo avión puesto: los cálculos, el ruteo y **también la
+exportación a PDF**. No manda nada a ningún servidor y no hay cuentas: lo que
+guardás queda en tu teléfono.
+
+Cuando haya una versión nueva y estés con señal, la app te avisa y vos decidís
+cuándo actualizar. No se reinicia sola en medio de un cálculo.
+
+---
+
+## La letra chica de los números
+
+> Cifras de planificación. No reemplazan a un electricista.
+
+- **El voltaje es un campo, no una constante.** Viene en 220 V y _todas_ las
+  corrientes salen de ahí. Cambialo antes de planificar un show en otra región: a
+  120 V la misma pantalla consume casi el doble de corriente.
+- **Los térmicos se derratean al 80%** por carga continua, y encima se aplica el
+  límite del propio conector. Un circuito de 16 A con un powerCON de 16 A te deja
+  **12,8 A utilizables**, y la app te muestra esa cuenta hecha.
+- **El trifásico se suma** y se compara contra una corriente monofásica. Eso vale
+  para carga balanceada; la app **no** te dice si tus fases están balanceadas.
+- **Para circuitos se usa la potencia pico**, no la media. La media aparece solo
+  como consumo total.
+
+---
+
+<div align="center">
+
+### 🛠️ &nbsp; De acá para abajo es para programadores
+
+</div>
+
+---
+
+## Correr el proyecto
+
+Necesitás Node.js 20 o superior.
 
 ```bash
 npm install
 npm run dev      # http://localhost:3000
 ```
 
-That is the whole setup. Your work is autosaved to local storage and restored before first paint.
+Eso es todo. Sin backend, sin variables de entorno, sin claves de API.
 
 ---
 
-## What it gives you
-
-| Area            | Output                                                                                                          |
-| --------------- | --------------------------------------------------------------------------------------------------------------- |
-| **Geometry**    | Grid (cols × rows), physical size, total cabinets, resolution, pixel count, weight                              |
-| **Electrical**  | Peak and average draw, current at your mains voltage, cabinets per circuit, cables needed, headroom or overload |
-| **Data**        | Cabinets per processor port, data cables needed, processors needed                                              |
-| **Routing**     | Serpentine cable plan over the grid — automatic or hand-drawn cell by cell, for data and power layers           |
-| **Deliverable** | A PDF work order with every table and both routing schematics                                                   |
-
----
-
-## Decisions worth knowing before you extend it
-
-### Mains start at the floor
-
-The processor and the PDU sit on the ground, so every automatically routed cable begins on the start corner's edge and its main is drawn down to the floor. Runs take whole columns to make that possible, which costs more cables than the arithmetic minimum — and that is the correct trade, because a cable that begins halfway up the screen is not one a crew can pull.
-
-Switch `Mains` to _One continuous snake_ for the older behaviour, where one serpentine is sliced by capacity wherever the count falls.
-
-### The drawing is the number
-
-Cable and processor counts are counted off the plan that gets drawn, never divided out of the cabinet count. Dividing assumes a cable can be cut anywhere; it cannot. The two must agree, so there is only one source: `domain/routing/demand.ts`.
-
-The same rule governs colour. The on-screen schematic and the PDF read `domain/routing/palette.ts`; neither keeps its own copy.
-
-### The domain throws, the validator collects
-
-`calculateProject` throws a `RangeError` on impossible input — a cabinet cannot have zero pixels, and that is a programmer error. `validateProject` returns a list of issues instead, because a half-typed form is not a bug: clearing a number field yields `NaN` while someone is mid-thought.
-
-The UI calls the validator first. Anything the calculator would throw on, the validator must catch first — there is a test asserting exactly that.
-
-### Labelled controls go through `Field`
-
-It generates an id with `useId` and wires `htmlFor`, so tapping a label focuses its control. The app once had 25 labels and zero associations.
-
----
-
-## Electrical assumptions
-
-> The numbers this app produces are **planning figures, not a substitute for an electrician.**
-
-- **Mains voltage is a setting, not a constant.** It defaults to 220 V and every amperage derives from it. Change it before you plan a show in another region — at 120 V the same screen draws almost twice the current.
-- **Breakers are derated to 80%** for continuous load, and the connector's own rating applies on top. A 16 A circuit on a 16 A powerCON gives 12.8 A usable.
-- **Three-phase supplies are summed** and compared against a single-phase current figure. That holds for a balanced load; it does not tell you whether your phases are balanced.
-- **Peak power is used for circuit planning**, average power only for the total draw figure.
-
----
-
-## How the code is laid out
+## Cómo está armado
 
 ```
 src/
-  domain/           pure calculation — no React, no DOM, fully tested
-    led-array/      grid sizing, resolution, weight, port capacity
-    electrical/     breaker derating, circuit distribution, peak draw
-    routing/        the serpentine walk, run balancing, demand, cable colours
-    project/        the saved document and its parser
-    catalog/        cabinets, processors, troubleshooting guides
-    validation.ts   field-level checks for half-typed input
-    calculate.ts    composes the above into one project calculation
-  infrastructure/   the outside world
-    pdf/            renders a domain calculation to a PDF blob
-    storage/        autosave and the named project library
-  features/         one folder per module, container + presentational
-    calculator/     the main screen
-    library/        cabinet spec table
-    troubleshooting/ field guide
+  domain/           cálculo puro — sin React, sin DOM, con tests
+    led-array/      grilla, resolución, peso, capacidad por puerto
+    electrical/     derateo de térmicos, circuitos, consumo pico
+    routing/        la serpentina, el balanceo, la demanda, los colores
+    project/        el documento guardado y su parser
+    catalog/        gabinetes, procesadores, guía de fallas
+    validation.ts   chequeos de campo para formularios a medio escribir
+    calculate.ts    compone todo lo anterior en un cálculo
+  infrastructure/   el mundo exterior
+    pdf/            renderiza un cálculo a un PDF
+    storage/        autoguardado y biblioteca de proyectos
+  features/         una carpeta por módulo, contenedor + presentación
   shared/ui/        Field, StatTile, SegmentedControl, SectionHeading
 ```
 
-The domain is pure and carries the test suite. React never reaches into it, and it never reaches into React.
+El dominio es puro y se lleva toda la suite de tests. React nunca entra ahí, y él
+nunca sale a buscar React.
+
+---
+
+## Decisiones de diseño
+
+### Los mains arrancan en el piso
+
+El procesador y el PDU están en el suelo, así que cada cable ruteado
+automáticamente empieza en el borde de la esquina de arranque y su main se dibuja
+bajando al piso. Para que eso sea posible, cada línea toma columnas enteras — lo
+que cuesta **más cables** que el mínimo aritmético. Ese es el precio, y es el
+correcto: un cable que arranca a mitad de pantalla no es un cable que se pueda
+tirar.
+
+En la barra de ruteo, `Mains` vuelve al comportamiento viejo, donde una sola
+serpentina se corta por capacidad donde caiga la cuenta.
+
+### El dibujo es el número
+
+Los cables y los procesadores se **cuentan del plan dibujado**, nunca se dividen
+del total de gabinetes. Dividir asume que un cable se puede cortar en cualquier
+lado, y no se puede. Los dos tienen que coincidir, así que hay una sola fuente:
+`domain/routing/demand.ts`.
+
+La misma regla rige el color: el esquemático en pantalla y el del PDF leen
+`domain/routing/palette.ts`, ninguno tiene su propia copia.
+
+### El dominio tira, el validador junta
+
+`calculateProject` tira `RangeError` con entradas imposibles — un gabinete no
+puede tener cero píxeles, y eso es un error de programación. `validateProject`
+devuelve una lista de problemas, porque un formulario a medio escribir no es un
+bug: borrar un número deja `NaN` mientras alguien está pensando.
+
+La UI llama al validador primero. Todo lo que haría explotar al calculador, el
+validador tiene que atajarlo antes — hay un test que afirma exactamente eso.
+
+### Los controles con label pasan por `Field`
+
+Genera el id con `useId` y conecta el `htmlFor`, así tocar la etiqueta enfoca su
+control. La app llegó a tener 25 labels y cero asociaciones.
 
 ---
 
 ## Scripts
 
-| Script               | What it does                                                             |
-| -------------------- | ------------------------------------------------------------------------ |
-| `npm run dev`        | Dev server on port 3000                                                  |
-| `npm run build`      | Production build into `dist/`                                            |
-| `npm run preview`    | Serve the production build                                               |
-| `npm run typecheck`  | `tsc --noEmit`, strict                                                   |
-| `npm run lint`       | ESLint with type-aware rules                                             |
-| `npm run test`       | Vitest, once                                                             |
-| `npm run test:watch` | Vitest, watching                                                         |
-| `npm run format`     | Prettier, writing                                                        |
-| `npm run check`      | **Typecheck + lint + format check + tests. Run this before committing.** |
+| Script               | Qué hace                                                            |
+| -------------------- | ------------------------------------------------------------------- |
+| `npm run dev`        | Servidor de desarrollo en el puerto 3000                            |
+| `npm run build`      | Build de producción en `dist/`                                      |
+| `npm run preview`    | Sirve el build de producción                                        |
+| `npm run typecheck`  | `tsc --noEmit`, estricto                                            |
+| `npm run lint`       | ESLint con reglas que usan tipos                                    |
+| `npm run test`       | Vitest, una vez                                                     |
+| `npm run test:watch` | Vitest, en watch                                                    |
+| `npm run format`     | Prettier, escribiendo                                               |
+| `npm run check`      | **Typecheck + lint + formato + tests. Correlo antes de commitear.** |
 
 ---
 
-## Contributing
+## Contribuir
 
-1. Branch off `master`.
-2. Write the test first — the domain is test-driven, and a green suite is not the same as a correct one. Cover the input space, not the case you had in mind.
-3. Run `npm run check`. It must pass with no warnings.
-4. Keep behaviour changes out of refactors, and keep the commit message about _why_.
-
----
-
-## Licence
-
-[MIT](LICENSE). Use it, fork it, ship it, sell it — a contribution to the event technicians who do this maths on a road case at 2am.
-
-The software comes with no warranty, and the figures it produces are planning figures. See _Electrical assumptions_ above.
+1. Rama a partir de `master`.
+2. Test primero. El dominio es test-driven, y **una suite en verde no es lo mismo
+   que código correcto**: cubrí el espacio de entradas, no el caso que tenías en
+   la cabeza.
+3. `npm run check` tiene que pasar sin warnings.
+4. Los cambios de comportamiento van separados de los refactors, y el mensaje del
+   commit explica el _por qué_.
 
 ---
 
-Built by [MateCode](https://github.com/matecodedev).
+## Licencia
+
+[MIT](LICENSE). Usalo, forkealo, vendelo si querés.
+
+Es un aporte a los técnicos de eventos que hacen estas cuentas arriba de un road
+case a las 2 de la mañana.
+
+<div align="center">
+<br>
+Hecho por <a href="https://matecode.dev">MateCode</a>
+</div>
