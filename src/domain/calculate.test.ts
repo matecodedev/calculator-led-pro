@@ -30,6 +30,8 @@ const input: ProjectInput = {
   processor,
   voltage: 220,
   breakerAmps: 16,
+  brightness: 1,
+  content: 'video',
   cableLoopAmps: 16,
 };
 

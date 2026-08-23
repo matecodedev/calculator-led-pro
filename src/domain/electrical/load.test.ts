@@ -4,6 +4,8 @@ import {
   cabinetsPerPowerCircuit,
   calculateElectricalLoad,
   effectiveAmpsPerLine,
+  expectedPowerW,
+  type ContentLevel,
 } from './load';
 
 describe('effectiveAmpsPerLine', () => {
@@ -62,6 +64,8 @@ describe('calculateElectricalLoad', () => {
     voltage: 220,
     breakerAmps: 16,
     cableLoopAmps: 16,
+    brightness: 1,
+    content: 'video' as ContentLevel,
   };
 
   it('sums peak and average draw across the array', () => {
@@ -96,5 +100,65 @@ describe('calculateElectricalLoad', () => {
 
   it('never reports Infinity when the cabinet draws no power', () => {
     expect(() => calculateElectricalLoad({ ...input, cabinetMaxPowerW: 0 })).toThrow(RangeError);
+  });
+});
+
+describe('expectedPowerW', () => {
+  const cabinet = { cabinetMaxPowerW: 160, cabinetAvgPowerW: 53 };
+
+  it('uses the manufacturer typical figure for video at full brightness', () => {
+    // The catalog's avgPower is exactly what "typical content, full brightness"
+    // means, so this case is the one number in the model nobody invented.
+    expect(
+      expectedPowerW({ totalCabinets: 40, ...cabinet, brightness: 1, content: 'video' }),
+    ).toBeCloseTo(40 * 53, 5);
+  });
+
+  it('scales linearly with brightness', () => {
+    const half = expectedPowerW({
+      totalCabinets: 40,
+      ...cabinet,
+      brightness: 0.5,
+      content: 'video',
+    });
+
+    expect(half).toBeCloseTo(40 * 53 * 0.5, 5);
+  });
+
+  it('charges full peak for an all-white screen', () => {
+    expect(expectedPowerW({ totalCabinets: 40, ...cabinet, brightness: 1, content: 'white' })).toBe(
+      40 * 160,
+    );
+  });
+
+  it('puts bright graphics between typical video and white', () => {
+    const at = (content: ContentLevel) =>
+      expectedPowerW({ totalCabinets: 40, ...cabinet, brightness: 1, content });
+
+    expect(at('dark')).toBeLessThan(at('video'));
+    expect(at('video')).toBeLessThan(at('bright'));
+    expect(at('bright')).toBeLessThan(at('white'));
+  });
+
+  it('never exceeds what the panels can physically draw', () => {
+    // 1.8x the typical figure would pass the peak on a cabinet whose average is
+    // more than half its maximum, and no content can draw more than all-white.
+    const dense = { cabinetMaxPowerW: 100, cabinetAvgPowerW: 90 };
+
+    expect(expectedPowerW({ totalCabinets: 10, ...dense, brightness: 1, content: 'bright' })).toBe(
+      10 * 100,
+    );
+  });
+
+  it('costs nothing for an empty array', () => {
+    expect(expectedPowerW({ totalCabinets: 0, ...cabinet, brightness: 1, content: 'video' })).toBe(
+      0,
+    );
+  });
+
+  it.each([0, -0.5, 1.5])('rejects a brightness of %s', (brightness) => {
+    expect(() =>
+      expectedPowerW({ totalCabinets: 40, ...cabinet, brightness, content: 'video' }),
+    ).toThrow(RangeError);
   });
 });

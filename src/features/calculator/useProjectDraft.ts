@@ -1,8 +1,13 @@
 import { useMemo, useState } from 'react';
 
-import { calculateProject, validateProject, type ProjectInput } from '../../domain/calculate';
+import {
+  calculateProject,
+  validateProject,
+  type ContentLevel,
+  type ProjectInput,
+} from '../../domain/calculate';
 import { cabinets, processors, type Cabinet, type Processor } from '../../domain/catalog';
-import type { ProjectSnapshot } from '../../domain/project/snapshot';
+import type { ScreenSnapshot } from '../../domain/project/snapshot';
 
 /**
  * Default mains voltage (V). 220 matches the catalog's region and what the app
@@ -43,9 +48,16 @@ const BLANK_PROCESSOR: Processor = {
  * show, without any of them being passed through a component that doesn't use
  * them.
  */
-export function useProjectDraft(initial?: ProjectSnapshot | null) {
-  const [eventName, setEventName] = useState(initial?.identity.eventName ?? '');
-  const [screenName, setScreenName] = useState(initial?.identity.screenName ?? '');
+export function useProjectDraft(initial?: ScreenSnapshot | null) {
+  // The event name lives one level up, on the event: a show has one name and
+  // several screens, so keeping it here would mean six copies to disagree.
+  const [screenName, setScreenName] = useState(initial?.name ?? '');
+
+  // How the screen is actually driven. Full brightness on typical content is
+  // the honest starting point: it is exactly what the catalog's average figure
+  // describes, so nothing is assumed until the technician says otherwise.
+  const [brightness, setBrightness] = useState(initial?.operating.brightness ?? 1);
+  const [content, setContent] = useState<ContentLevel>(initial?.operating.content ?? 'video');
 
   const [calcMode, setCalcMode] = useState<CalcMode>(initial?.target.calcMode ?? 'dimensions');
   const [targetWidthM, setTargetWidthM] = useState(initial?.target.targetWidthM ?? 4);
@@ -92,6 +104,8 @@ export function useProjectDraft(initial?: ProjectSnapshot | null) {
       voltage,
       breakerAmps,
       cableLoopAmps,
+      brightness,
+      content,
     }),
     [
       calcMode,
@@ -104,6 +118,8 @@ export function useProjectDraft(initial?: ProjectSnapshot | null) {
       voltage,
       breakerAmps,
       cableLoopAmps,
+      brightness,
+      content,
     ],
   );
 
@@ -125,7 +141,7 @@ export function useProjectDraft(initial?: ProjectSnapshot | null) {
   };
 
   return {
-    identity: { eventName, screenName, setEventName, setScreenName },
+    identity: { screenName, setScreenName },
     target: {
       calcMode,
       setCalcMode,
@@ -164,9 +180,10 @@ export function useProjectDraft(initial?: ProjectSnapshot | null) {
       cableLoopAmps,
       setCableLoopAmps,
     },
+    operating: { brightness, setBrightness, content, setContent },
     /** This hook's share of the saved document. */
     snapshotSlice: {
-      identity: { eventName, screenName },
+      name: screenName,
       target: { calcMode, targetWidthM, targetHeightM, cols, rows },
       cabinet: {
         selectedId: isCustomCabinet ? 'custom' : selectedCabinetId,
@@ -179,6 +196,7 @@ export function useProjectDraft(initial?: ProjectSnapshot | null) {
         custom: customProcessor,
       },
       supply: { voltage, pduCapacityAmps, breakerAmps, cableLoopAmps },
+      operating: { brightness, content },
     },
     input,
     issues,
@@ -191,4 +209,5 @@ export type CabinetChoice = ProjectDraft['cabinetChoice'];
 export type ProcessorChoice = ProjectDraft['processorChoice'];
 export type TargetControls = ProjectDraft['target'];
 export type SupplyControls = ProjectDraft['supply'];
+export type OperatingControls = ProjectDraft['operating'];
 export type ProjectIdentity = ProjectDraft['identity'];

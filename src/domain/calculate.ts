@@ -6,7 +6,7 @@
  */
 
 import type { Cabinet, Processor } from './catalog';
-import { calculateElectricalLoad, type ElectricalLoad } from './electrical/load';
+import { calculateElectricalLoad, type ContentLevel, type ElectricalLoad } from './electrical/load';
 import {
   cabinetsPerDataPort as portCapacity,
   calculateArrayGeometry,
@@ -24,6 +24,7 @@ import {
 } from './validation';
 
 export type { TargetScreen } from './validation';
+export { CONTENT_LEVELS, type ContentLevel } from './electrical/load';
 
 export interface ProjectInput {
   target: TargetScreen;
@@ -33,6 +34,9 @@ export interface ProjectInput {
   voltage: number;
   breakerAmps: number;
   cableLoopAmps: number;
+  /** Screen brightness as a fraction, above 0 and up to 1. */
+  brightness: number;
+  content: ContentLevel;
 }
 
 export interface ProjectCalculation extends ArrayGeometry, ElectricalLoad {
@@ -65,6 +69,8 @@ export function calculateProject({
   voltage,
   breakerAmps,
   cableLoopAmps,
+  brightness,
+  content,
 }: ProjectInput): ProjectCalculation {
   const geometry = calculateArrayGeometry({ ...resolveGrid(target, cabinet), cabinet });
 
@@ -75,6 +81,8 @@ export function calculateProject({
     voltage,
     breakerAmps,
     cableLoopAmps,
+    brightness,
+    content,
   });
 
   const cabinetsPerDataPort = portCapacity({
