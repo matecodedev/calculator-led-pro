@@ -38,6 +38,7 @@ const screenBody: Omit<ScreenSnapshot, 'id' | 'name'> = {
       model: 'Processor',
       dataPorts: 4,
       maxPixelsPerPort: 650_000,
+      maxPixelsTotal: 6_500_000,
     },
   },
   supply: { voltage: 230, pduCapacityAmps: 96, breakerAmps: 16, cableLoopAmps: 16 },

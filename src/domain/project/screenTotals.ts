@@ -118,6 +118,8 @@ export function screenPlan(screen: ScreenSnapshot): ScreenPlan | null {
     dataRuns: dataRoutes,
     powerRuns: powerRoutes,
     dataPortsPerProcessor: input.processor.dataPorts,
+    totalPixels: calc.totalPixels,
+    maxPixelsPerProcessor: input.processor.maxPixelsTotal,
   });
 
   return {

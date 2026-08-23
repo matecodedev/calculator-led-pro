@@ -30,6 +30,13 @@ export default function LibraryScreen() {
         Biblioteca de gabinetes
       </h2>
 
+      <p className="mb-4 border border-amber-500 bg-[#2A2213] p-3 text-[11px] text-amber-100">
+        Estos datos vinieron con la app y <strong>no están verificados</strong> contra las hojas de
+        los fabricantes. Sirven para dimensionar rápido, pero antes de comprometer una instalación
+        conviene contrastarlos: en la calculadora, <em>Editar estos datos</em> te deja corregir
+        cualquier gabinete con la ficha real en la mano.
+      </p>
+
       <div className="overflow-x-auto border border-[#333]">
         <table className="w-full text-left text-xs font-mono min-w-[600px]">
           <thead className="bg-[#222] text-[#CCFF00] uppercase text-[10px]">
