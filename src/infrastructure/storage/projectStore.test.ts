@@ -61,6 +61,8 @@ const screen = {
       dataPorts: 4,
       maxPixelsPerPort: 650_000,
       maxPixelsTotal: 6_500_000,
+      maxCanvasWidth: 10_240,
+      maxCanvasHeight: 8_192,
     },
   },
   supply: { voltage: 220, pduCapacityAmps: 96, breakerAmps: 16, cableLoopAmps: 16 },

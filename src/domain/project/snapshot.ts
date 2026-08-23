@@ -173,7 +173,21 @@ function parseProcessor(value: unknown): Processor | null {
     ? value.maxPixelsTotal
     : dataPorts * maxPixelsPerPort;
 
-  return { id, brand, model, dataPorts, maxPixelsPerPort, maxPixelsTotal };
+  // Documents saved before the canvas mattered get the NovaStar figures, which
+  // is what every processor in the catalog was assumed to have.
+  const maxCanvasWidth = isFiniteNumber(value.maxCanvasWidth) ? value.maxCanvasWidth : 10_240;
+  const maxCanvasHeight = isFiniteNumber(value.maxCanvasHeight) ? value.maxCanvasHeight : 8_192;
+
+  return {
+    id,
+    brand,
+    model,
+    dataPorts,
+    maxPixelsPerPort,
+    maxPixelsTotal,
+    maxCanvasWidth,
+    maxCanvasHeight,
+  };
 }
 
 /**

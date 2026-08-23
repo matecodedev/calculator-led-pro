@@ -120,6 +120,10 @@ export function screenPlan(screen: ScreenSnapshot): ScreenPlan | null {
     dataPortsPerProcessor: input.processor.dataPorts,
     totalPixels: calc.totalPixels,
     maxPixelsPerProcessor: input.processor.maxPixelsTotal,
+    resX: calc.resX,
+    resY: calc.resY,
+    maxCanvasWidth: input.processor.maxCanvasWidth,
+    maxCanvasHeight: input.processor.maxCanvasHeight,
   });
 
   return {

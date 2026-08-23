@@ -40,6 +40,8 @@ const BLANK_PROCESSOR: Processor = {
   dataPorts: 4,
   maxPixelsPerPort: 650000,
   maxPixelsTotal: 4 * 650_000,
+  maxCanvasWidth: 10_240,
+  maxCanvasHeight: 8_192,
 };
 
 /**

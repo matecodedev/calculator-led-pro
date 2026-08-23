@@ -1,4 +1,4 @@
-import { Cpu } from 'lucide-react';
+import { Cpu, Pencil } from 'lucide-react';
 
 import type { ProjectCalculation } from '../../../domain/calculate';
 import type { RoutingDemand } from '../../../domain/routing/demand';
@@ -6,7 +6,11 @@ import { processors } from '../../../domain/catalog';
 import Field from '../../../shared/ui/Field';
 import SectionHeading from '../../../shared/ui/SectionHeading';
 import StatTile from '../../../shared/ui/StatTile';
-import { compactControlClass, selectControlClass } from '../../../shared/ui/controls';
+import {
+  buttonFocusClass,
+  compactControlClass,
+  selectControlClass,
+} from '../../../shared/ui/controls';
 import type { ProcessorChoice } from '../useProjectDraft';
 import AwaitingInput from './AwaitingInput';
 
@@ -18,7 +22,7 @@ interface ProcessingPanelProps {
 }
 
 export default function ProcessingPanel({ choice, results, demand }: ProcessingPanelProps) {
-  const { processor, selectedId, isCustom, custom, select, updateCustom } = choice;
+  const { processor, selectedId, isCustom, custom, select, updateCustom, editSelected } = choice;
   const overCapacity = results !== null && demand.dataCables > processor.dataPorts;
 
   return (
@@ -46,9 +50,27 @@ export default function ProcessingPanel({ choice, results, demand }: ProcessingP
           )}
         </Field>
 
+        {!isCustom && (
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={editSelected}
+              className={`flex items-center gap-2 px-3 py-2 min-h-11 text-[11px] font-bold uppercase tracking-wider rounded-sm border border-[#444] text-neutral-300 hover:text-white transition-colors ${buttonFocusClass}`}
+            >
+              <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+              Editar estos datos
+            </button>
+            <span className="text-[11px] text-neutral-500">
+              {processor.spec
+                ? `Ficha: ${processor.spec.source} · ${processor.spec.checkedOn}`
+                : 'Datos sin verificar contra hoja del fabricante'}
+            </span>
+          </div>
+        )}
+
         {isCustom && (
           <div className="grid grid-cols-2 gap-3 bg-[#161616] p-3 border border-[#333]">
-            <Field label="Output ports">
+            <Field label="Puertos de salida">
               {(id) => (
                 <input
                   id={id}
@@ -62,7 +84,7 @@ export default function ProcessingPanel({ choice, results, demand }: ProcessingP
                 />
               )}
             </Field>
-            <Field label="Max px / port">
+            <Field label="Píxeles por puerto">
               {(id) => (
                 <input
                   id={id}
@@ -72,6 +94,51 @@ export default function ProcessingPanel({ choice, results, demand }: ProcessingP
                   value={custom.maxPixelsPerPort}
                   onChange={(e) =>
                     updateCustom({ ...custom, maxPixelsPerPort: Number(e.target.value) })
+                  }
+                  className={compactControlClass}
+                />
+              )}
+            </Field>
+            <Field label="Píxeles totales del equipo">
+              {(id) => (
+                <input
+                  id={id}
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  value={custom.maxPixelsTotal}
+                  onChange={(e) =>
+                    updateCustom({ ...custom, maxPixelsTotal: Number(e.target.value) })
+                  }
+                  className={compactControlClass}
+                />
+              )}
+            </Field>
+            <Field label="Canvas máx. ancho (px)">
+              {(id) => (
+                <input
+                  id={id}
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  value={custom.maxCanvasWidth}
+                  onChange={(e) =>
+                    updateCustom({ ...custom, maxCanvasWidth: Number(e.target.value) })
+                  }
+                  className={compactControlClass}
+                />
+              )}
+            </Field>
+            <Field label="Canvas máx. alto (px)">
+              {(id) => (
+                <input
+                  id={id}
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  value={custom.maxCanvasHeight}
+                  onChange={(e) =>
+                    updateCustom({ ...custom, maxCanvasHeight: Number(e.target.value) })
                   }
                   className={compactControlClass}
                 />
@@ -99,12 +166,22 @@ export default function ProcessingPanel({ choice, results, demand }: ProcessingP
                 </>
               }
               footnote={
-                overCapacity && (
+                demand.processorLimit === 'canvas' ? (
                   <span className="text-amber-400 font-bold tracking-widest uppercase">
-                    Falta{demand.processorsNeeded > 2 ? 'n' : ''} {demand.processorsNeeded - 1}{' '}
-                    procesador
-                    {demand.processorsNeeded > 2 ? 'es' : ''}
+                    La pantalla excede el canvas del equipo · hay que repartirla
                   </span>
+                ) : demand.processorLimit === 'pixels' ? (
+                  <span className="text-amber-400 font-bold tracking-widest uppercase">
+                    Excede los píxeles que mueve un equipo
+                  </span>
+                ) : (
+                  overCapacity && (
+                    <span className="text-amber-400 font-bold tracking-widest uppercase">
+                      Falta{demand.processorsNeeded > 2 ? 'n' : ''} {demand.processorsNeeded - 1}{' '}
+                      procesador
+                      {demand.processorsNeeded > 2 ? 'es' : ''}
+                    </span>
+                  )
                 )
               }
             />

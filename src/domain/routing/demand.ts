@@ -13,10 +13,17 @@
 
 import type { GridPosition } from './serpentine';
 
+export type ProcessorLimit = 'ports' | 'pixels' | 'canvas';
+
 export interface RoutingDemand {
   dataCables: number;
   powerCables: number;
   processorsNeeded: number;
+  /**
+   * Which ceiling decided the count — each has a different way out. Null when
+   * no controller is needed at all: nothing was decided, so nothing decided it.
+   */
+  processorLimit: ProcessorLimit | null;
 }
 
 export interface RoutingDemandInput {
@@ -32,6 +39,17 @@ export interface RoutingDemandInput {
    * is enough for a screen it cannot drive.
    */
   maxPixelsPerProcessor: number;
+  resX: number;
+  resY: number;
+  /**
+   * The canvas one controller can address.
+   *
+   * A third ceiling, and the one that no amount of spare capacity fixes: a
+   * VX1000 reaches 10,240 px across whatever else is free, so a wider screen
+   * has to be split between controllers even if it has few pixels.
+   */
+  maxCanvasWidth: number;
+  maxCanvasHeight: number;
 }
 
 /** A half-drawn manual plan carries a trailing empty run; it is not a cable. */
@@ -44,6 +62,10 @@ export function routingDemand({
   dataPortsPerProcessor,
   totalPixels,
   maxPixelsPerProcessor,
+  resX,
+  resY,
+  maxCanvasWidth,
+  maxCanvasHeight,
 }: RoutingDemandInput): RoutingDemand {
   if (!Number.isInteger(dataPortsPerProcessor) || dataPortsPerProcessor < 1) {
     throw new RangeError(
@@ -56,14 +78,29 @@ export function routingDemand({
 
   const dataCables = countCables(dataRuns);
 
+  // Three ceilings, and the fix is different for each: more ports means another
+  // box, more pixels means another box, and a canvas too wide means splitting
+  // the screen between boxes.
+  const byPorts = Math.ceil(dataCables / dataPortsPerProcessor);
+  const byPixels = Math.ceil(totalPixels / maxPixelsPerProcessor);
+  // No screen is no canvas: a grid of zero needs no controller to address it.
+  const byCanvas =
+    resX > 0 && resY > 0 ? Math.ceil(resX / maxCanvasWidth) * Math.ceil(resY / maxCanvasHeight) : 0;
+
+  const processorsNeeded = Math.max(byPorts, byPixels, byCanvas);
+  const processorLimit: ProcessorLimit | null =
+    processorsNeeded === 0
+      ? null
+      : processorsNeeded === byCanvas && byCanvas > 1
+        ? 'canvas'
+        : processorsNeeded === byPixels && byPixels >= byPorts
+          ? 'pixels'
+          : 'ports';
+
   return {
     dataCables,
     powerCables: countCables(powerRuns),
-    // Whichever ceiling bites first: the ports to plug into, or the pixels the
-    // box can push.
-    processorsNeeded: Math.max(
-      Math.ceil(dataCables / dataPortsPerProcessor),
-      Math.ceil(totalPixels / maxPixelsPerProcessor),
-    ),
+    processorsNeeded,
+    processorLimit,
   };
 }
