@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Download } from 'lucide-react';
 
+import { summariseEvent } from '../../domain/project/eventSummary';
+import { screenTotals } from '../../domain/project/screenTotals';
 import {
   describeSnapshot,
+  newScreenId,
   SNAPSHOT_VERSION,
-  type ProjectSnapshot,
+  type EventSnapshot,
+  type ScreenSnapshot,
 } from '../../domain/project/snapshot';
 import { routingDemand } from '../../domain/routing/demand';
 import { renderProjectReport, reportFilename } from '../../infrastructure/pdf/projectReport';
@@ -21,6 +25,7 @@ import { downloadBlob } from '../../shared/download';
 import { buttonFocusClass } from '../../shared/ui/controls';
 import CabinetPanel from './components/CabinetPanel';
 import ElectricalPanel from './components/ElectricalPanel';
+import EventBar from './components/EventBar';
 import ProcessingPanel from './components/ProcessingPanel';
 import ProjectAlerts, { type DangerAlert } from './components/ProjectAlerts';
 import ProjectBar from './components/ProjectBar';
@@ -51,64 +56,241 @@ function resizeNoticeMessage(notice: NonNullable<ResizeNotice>): string {
   )} cabinets and the drawing returns.`;
 }
 
-interface Session {
-  /** Bumping this remounts the workspace, which reseeds every field. */
-  generation: number;
-  snapshot: ProjectSnapshot | null;
-  openProjectId: string | null;
+/**
+ * A well-formed empty screen. The editor's own hooks seed the real defaults on
+ * first render and write them straight back, so these values only have to hold
+ * the document together before anyone has typed.
+ */
+function blankScreen(): ScreenSnapshot {
+  return {
+    id: newScreenId(),
+    name: '',
+    target: { calcMode: 'dimensions', targetWidthM: 4, targetHeightM: 2.5, cols: 6, rows: 4 },
+    cabinet: {
+      selectedId: '',
+      isCustom: false,
+      custom: {
+        id: 'custom',
+        brand: 'Custom',
+        model: 'Cabinet',
+        pitch: 3.9,
+        width: 500,
+        height: 500,
+        resX: 128,
+        resY: 128,
+        maxPower: 150,
+        avgPower: 50,
+        weight: 8,
+      },
+    },
+    processor: {
+      selectedId: '',
+      isCustom: false,
+      custom: {
+        id: 'custom_p',
+        brand: 'Custom',
+        model: 'Processor',
+        dataPorts: 4,
+        maxPixelsPerPort: 650000,
+      },
+    },
+    supply: { voltage: 220, pduCapacityAmps: 96, breakerAmps: 16, cableLoopAmps: 16 },
+    routing: {
+      layer: 'data',
+      priority: 'vertical',
+      start: 'bottom-left',
+      mains: 'start-edge',
+      mode: 'auto',
+      manualData: [[]],
+      manualPower: [[]],
+    },
+  };
+}
+
+function blankEvent(): EventSnapshot {
+  const screen = blankScreen();
+  return {
+    version: SNAPSHOT_VERSION,
+    savedAt: new Date(0).toISOString(),
+    eventName: '',
+    mainsCapacityAmps: null,
+    screens: [screen],
+    activeScreenId: screen.id,
+  };
 }
 
 /**
- * Restores the last session on load, and swaps the whole workspace when a saved
- * screen is opened. Remounting on a key is React's own way to reset state — far
- * safer here than pushing twenty setters through the tree.
+ * An event and the screens in it.
+ *
+ * A show is a main, two laterals and a pair of totems, each a different size on
+ * the same feed. The editor works on one screen at a time and remounts when you
+ * switch — React's own way to reset twenty fields — while this component keeps
+ * the event whole, totals every screen, and is the only thing that can tell you
+ * the show as a whole does not fit the building.
  */
 export default function CalculatorScreen() {
-  const [session, setSession] = useState<Session>(() => ({
-    generation: 0,
-    snapshot: loadAutosave(),
-    openProjectId: null,
-  }));
+  const [event, setEvent] = useState<EventSnapshot>(() => loadAutosave() ?? blankEvent());
+  /** Bumping this remounts the editor, which reseeds every field. */
+  const [generation, setGeneration] = useState(0);
+  const [projects, setProjects] = useState<SavedProject[]>(() => listProjects());
+  const [openProjectId, setOpenProjectId] = useState<string | null>(null);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const storageAvailable = browserStore() !== null;
+
+  const active = event.screens.find((s) => s.id === event.activeScreenId) ?? event.screens[0];
+
+  // Every screen, including the one being edited, goes through the same
+  // arithmetic. A second path for the active screen is how a total ends up
+  // disagreeing with the screen it came from.
+  const summary = useMemo(() => {
+    const totals = event.screens.map(screenTotals).filter((t) => t !== null);
+    return summariseEvent({ screens: totals, capacityAmps: event.mainsCapacityAmps });
+  }, [event.screens, event.mainsCapacityAmps]);
+
+  // Serialising gives the effect a stable dependency; the object identity
+  // changes on every render, the text only changes when the work does.
+  const documentJson = useMemo(
+    () =>
+      JSON.stringify({
+        eventName: event.eventName,
+        mainsCapacityAmps: event.mainsCapacityAmps,
+        screens: event.screens,
+        activeScreenId: event.activeScreenId,
+      }),
+    [event.eventName, event.mainsCapacityAmps, event.screens, event.activeScreenId],
+  );
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const stamped: EventSnapshot = {
+        version: SNAPSHOT_VERSION,
+        savedAt: new Date().toISOString(),
+        ...(JSON.parse(documentJson) as Omit<EventSnapshot, 'version' | 'savedAt'>),
+      };
+      if (saveAutosave(stamped)) setSavedAt(new Date());
+    }, AUTOSAVE_DELAY_MS);
+
+    return () => clearTimeout(timer);
+  }, [documentJson]);
+
+  const toSnapshot = (): EventSnapshot => ({ ...event, savedAt: new Date().toISOString() });
+  const saveName = describeSnapshot(toSnapshot());
+  const isNamed = saveName !== 'Untitled event';
+
+  /** Replaces the screen being edited with whatever the editor now holds. */
+  const updateActiveScreen = (screen: ScreenSnapshot) =>
+    setEvent((previous) => ({
+      ...previous,
+      screens: previous.screens.map((s) => (s.id === screen.id ? screen : s)),
+    }));
+
+  const openScreen = (id: string) => {
+    setEvent((previous) => ({ ...previous, activeScreenId: id }));
+    setGeneration((g) => g + 1);
+  };
+
+  const addScreen = (from?: ScreenSnapshot) => {
+    const screen: ScreenSnapshot = from
+      ? { ...structuredClone(from), id: newScreenId(), name: `${from.name || 'Screen'} copy` }
+      : blankScreen();
+    setEvent((previous) => ({
+      ...previous,
+      screens: [...previous.screens, screen],
+      activeScreenId: screen.id,
+    }));
+    setGeneration((g) => g + 1);
+  };
+
+  const removeActiveScreen = () => {
+    if (event.screens.length <= 1) return;
+    setEvent((previous) => {
+      const remaining = previous.screens.filter((s) => s.id !== previous.activeScreenId);
+      return { ...previous, screens: remaining, activeScreenId: remaining[0].id };
+    });
+    setGeneration((g) => g + 1);
+  };
+
+  const openProject = (project: SavedProject) => {
+    setEvent(project.snapshot);
+    setOpenProjectId(project.id);
+    setGeneration((g) => g + 1);
+  };
+
+  const handleSave = () => {
+    const next = saveProject(saveName, toSnapshot());
+    setProjects(next);
+    const saved = next.find((p) => p.name === saveName);
+    if (saved) setOpenProjectId(saved.id);
+  };
+
+  const handleDelete = (id: string) => {
+    setProjects(deleteProject(id));
+    setOpenProjectId(null);
+  };
+
+  // The show as a whole overrunning the venue feed is a hazard no single screen
+  // can see: each one passes its own PDU and the sum still trips the building.
+  const eventDanger: DangerAlert | null = summary.overCapacity
+    ? {
+        headline: 'Event over the venue feed',
+        detail: `The ${summary.screens.length} screens draw ${summary.totalMaxAmps.toFixed(1)} A together, and the declared feed is ${summary.capacityAmps} A. Every screen can fit its own supply while the show does not fit the building.`,
+      }
+    : null;
 
   return (
-    <CalculatorWorkspace
-      key={session.generation}
-      initial={session.snapshot}
-      openProjectId={session.openProjectId}
-      onOpenProject={(project) =>
-        setSession((previous) => ({
-          generation: previous.generation + 1,
-          snapshot: project.snapshot,
-          openProjectId: project.id,
-        }))
-      }
-      onProjectSaved={(id) => setSession((previous) => ({ ...previous, openProjectId: id }))}
-      onProjectDeleted={() => setSession((previous) => ({ ...previous, openProjectId: null }))}
-    />
+    <div className="animate-in fade-in duration-300">
+      <ProjectBar
+        projects={projects}
+        openProjectId={openProjectId}
+        saveName={isNamed ? saveName : ''}
+        savedAt={savedAt}
+        storageAvailable={storageAvailable}
+        onOpen={(id) => {
+          const project = projects.find((p) => p.id === id);
+          if (project) openProject(project);
+        }}
+        onSave={handleSave}
+        onDelete={handleDelete}
+      />
+
+      <EventBar
+        eventName={event.eventName}
+        onEventNameChange={(eventName) => setEvent((p) => ({ ...p, eventName }))}
+        mainsCapacityAmps={event.mainsCapacityAmps}
+        onMainsCapacityChange={(mainsCapacityAmps) =>
+          setEvent((p) => ({ ...p, mainsCapacityAmps }))
+        }
+        screens={event.screens}
+        activeScreenId={active.id}
+        summary={summary}
+        onSelectScreen={openScreen}
+        onAddScreen={() => addScreen()}
+        onDuplicateScreen={() => addScreen(active)}
+        onDeleteScreen={removeActiveScreen}
+      />
+
+      <ScreenEditor
+        key={`${generation}-${active.id}`}
+        initial={active}
+        eventName={event.eventName}
+        eventDanger={eventDanger}
+        onScreenChange={updateActiveScreen}
+      />
+    </div>
   );
 }
 
-interface WorkspaceProps {
-  initial: ProjectSnapshot | null;
-  openProjectId: string | null;
-  onOpenProject: (project: SavedProject) => void;
-  onProjectSaved: (id: string) => void;
-  onProjectDeleted: () => void;
+interface ScreenEditorProps {
+  initial: ScreenSnapshot;
+  eventName: string;
+  eventDanger: DangerAlert | null;
+  onScreenChange: (screen: ScreenSnapshot) => void;
 }
 
-function CalculatorWorkspace({
-  initial,
-  openProjectId,
-  onOpenProject,
-  onProjectSaved,
-  onProjectDeleted,
-}: WorkspaceProps) {
+function ScreenEditor({ initial, eventName, eventDanger, onScreenChange }: ScreenEditorProps) {
   const draft = useProjectDraft(initial);
   const plan = useRoutingPlan(draft.results, initial);
   const [exportError, setExportError] = useState<string | null>(null);
-  const [projects, setProjects] = useState<SavedProject[]>(() => listProjects());
-  const [savedAt, setSavedAt] = useState<Date | null>(null);
-  const storageAvailable = browserStore() !== null;
 
   const { results, issues } = draft;
 
@@ -125,8 +307,19 @@ function CalculatorWorkspace({
       })
     : { dataCables: 0, powerCables: 0, processorsNeeded: 0 };
 
-  // The one hazard in this app that can hurt someone. It gets the global alarm
-  // channel, above the fold, on every breakpoint — not a footnote two screens down.
+  const screenJson = useMemo(
+    () => JSON.stringify({ id: initial.id, ...draft.snapshotSlice, routing: plan.snapshotSlice }),
+    [initial.id, draft.snapshotSlice, plan.snapshotSlice],
+  );
+
+  useEffect(() => {
+    onScreenChange(JSON.parse(screenJson) as ScreenSnapshot);
+    // `onScreenChange` is a fresh closure on every parent render, so depending
+    // on it would write the screen back on every keystroke anywhere in the app.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screenJson]);
+
+  // The hazard this screen can see on its own: more current than its supply.
   const danger: DangerAlert | null =
     results && results.maxAmps > draft.supply.pduCapacityAmps
       ? {
@@ -135,55 +328,12 @@ function CalculatorWorkspace({
         }
       : null;
 
-  // Serialising gives the effect a stable dependency; the object identity
-  // changes on every render, the text only changes when the work does.
-  const documentJson = useMemo(
-    () => JSON.stringify({ ...draft.snapshotSlice, routing: plan.snapshotSlice }),
-    [draft.snapshotSlice, plan.snapshotSlice],
-  );
-
-  const toSnapshot = (): ProjectSnapshot => ({
-    version: SNAPSHOT_VERSION,
-    savedAt: new Date().toISOString(),
-    ...draft.snapshotSlice,
-    routing: plan.snapshotSlice,
-  });
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const stamped: ProjectSnapshot = {
-        version: SNAPSHOT_VERSION,
-        savedAt: new Date().toISOString(),
-        ...(JSON.parse(documentJson) as Omit<ProjectSnapshot, 'version' | 'savedAt'>),
-      };
-      if (saveAutosave(stamped)) setSavedAt(new Date());
-    }, AUTOSAVE_DELAY_MS);
-
-    return () => clearTimeout(timer);
-  }, [documentJson]);
-
-  const saveName = describeSnapshot(toSnapshot());
-  const isNamed = saveName !== 'Untitled screen';
-
-  const handleSave = () => {
-    const snapshot = toSnapshot();
-    const next = saveProject(saveName, snapshot);
-    setProjects(next);
-    const saved = next.find((p) => p.name === saveName);
-    if (saved) onProjectSaved(saved.id);
-  };
-
-  const handleDelete = (id: string) => {
-    setProjects(deleteProject(id));
-    onProjectDeleted();
-  };
-
   const exportReport = async () => {
     if (!results) return;
+    const identity = { eventName, screenName: draft.identity.screenName };
     try {
       const blob = await renderProjectReport({
-        eventName: draft.identity.eventName,
-        screenName: draft.identity.screenName,
+        ...identity,
         cabinet: draft.cabinetChoice.cabinet,
         processor: draft.processorChoice.processor,
         calculation: results,
@@ -195,7 +345,7 @@ function CalculatorWorkspace({
         powerRoutes: plan.routesFor('power'),
         demand,
       });
-      downloadBlob(blob, reportFilename(draft.identity));
+      downloadBlob(blob, reportFilename(identity));
       setExportError(null);
     } catch (error) {
       console.error('PDF export failed', error);
@@ -208,11 +358,11 @@ function CalculatorWorkspace({
     `rounded-sm transition-colors hover:bg-[#aacc00] disabled:opacity-40 disabled:cursor-not-allowed ${buttonFocusClass}`;
 
   return (
-    <div className="animate-in fade-in duration-300">
+    <div>
       <div className="p-4 bg-[#111] border-b border-[#333] justify-between items-center sticky top-0 z-10 hidden sm:flex">
-        <h1 className="text-xs font-bold tracking-widest uppercase text-white">
+        <h2 className="text-xs font-bold tracking-widest uppercase text-white">
           Active Configuration Project
-        </h1>
+        </h2>
         <button
           type="button"
           onClick={() => void exportReport()}
@@ -235,22 +385,8 @@ function CalculatorWorkspace({
         </button>
       </div>
 
-      <ProjectBar
-        projects={projects}
-        openProjectId={openProjectId}
-        saveName={isNamed ? saveName : ''}
-        savedAt={savedAt}
-        storageAvailable={storageAvailable}
-        onOpen={(id) => {
-          const project = projects.find((p) => p.id === id);
-          if (project) onOpenProject(project);
-        }}
-        onSave={handleSave}
-        onDelete={handleDelete}
-      />
-
       <ProjectAlerts
-        danger={danger}
+        dangers={[eventDanger, danger].filter((d) => d !== null)}
         issues={issues}
         exportError={exportError}
         notice={

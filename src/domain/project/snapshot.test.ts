@@ -2,15 +2,15 @@ import { describe, expect, it } from 'vitest';
 import {
   describeSnapshot,
   LEGACY_LINE_VOLTAGE,
+  newScreenId,
   parseSnapshot,
   SNAPSHOT_VERSION,
-  type ProjectSnapshot,
+  type EventSnapshot,
+  type ScreenSnapshot,
 } from './snapshot';
 
-const snapshot: ProjectSnapshot = {
-  version: 2,
-  savedAt: '2026-08-17T20:00:00.000Z',
-  identity: { eventName: 'Lollapalooza 2026', screenName: 'Main Stage' },
+/** The fields a screen carries, without the identity a version decides. */
+const screenBody: Omit<ScreenSnapshot, 'id' | 'name'> = {
   target: { calcMode: 'dimensions', targetWidthM: 4, targetHeightM: 2.5, cols: 6, rows: 4 },
   cabinet: {
     selectedId: 'a_nt29',
@@ -58,6 +58,25 @@ const snapshot: ProjectSnapshot = {
   },
 };
 
+const screen: ScreenSnapshot = { id: 'screen-main', name: 'Main Stage', ...screenBody };
+
+const snapshot: EventSnapshot = {
+  version: SNAPSHOT_VERSION,
+  savedAt: '2026-08-17T20:00:00.000Z',
+  eventName: 'Lollapalooza 2026',
+  mainsCapacityAmps: 96,
+  screens: [screen],
+  activeScreenId: 'screen-main',
+};
+
+/** The version 2 document: one screen at the top level, event name inside it. */
+const legacy = {
+  version: 2,
+  savedAt: '2026-08-17T20:00:00.000Z',
+  identity: { eventName: 'Lollapalooza 2026', screenName: 'Main Stage' },
+  ...screenBody,
+};
+
 /** What actually goes to storage and comes back. */
 const roundTrip = (value: unknown) => parseSnapshot(JSON.parse(JSON.stringify(value)));
 
@@ -67,15 +86,57 @@ describe('parseSnapshot', () => {
   });
 
   it('keeps hand-drawn routes cell for cell', () => {
-    const parsed = roundTrip(snapshot);
-
-    expect(parsed?.routing.manualData).toEqual([
+    expect(roundTrip(snapshot)?.screens[0].routing.manualData).toEqual([
       [
         { x: 0, y: 3 },
         { x: 0, y: 2 },
       ],
       [{ x: 1, y: 0 }],
     ]);
+  });
+
+  it('reads an event of several screens', () => {
+    const parsed = roundTrip({
+      ...snapshot,
+      screens: [
+        screen,
+        { ...screen, id: 'screen-lateral', name: 'Lateral L' },
+        { ...screen, id: 'screen-totem', name: 'Totem 1' },
+      ],
+      activeScreenId: 'screen-totem',
+    });
+
+    expect(parsed?.screens.map((s) => s.name)).toEqual(['Main Stage', 'Lateral L', 'Totem 1']);
+    expect(parsed?.activeScreenId).toBe('screen-totem');
+  });
+
+  it('rejects two screens sharing an id', () => {
+    // The switcher and the report both address screens by id; a duplicate makes
+    // "this screen" ambiguous, which is not something to guess about.
+    expect(
+      roundTrip({ ...snapshot, screens: [screen, { ...screen, name: 'Lateral L' }] }),
+    ).toBeNull();
+  });
+
+  it('rejects an event with no screens at all', () => {
+    expect(roundTrip({ ...snapshot, screens: [] })).toBeNull();
+  });
+
+  it('falls back to the first screen when the active one is gone', () => {
+    expect(roundTrip({ ...snapshot, activeScreenId: 'deleted' })?.activeScreenId).toBe(
+      'screen-main',
+    );
+  });
+
+  it('reads an event whose venue feed was never declared', () => {
+    const parsed = roundTrip({ ...snapshot, mainsCapacityAmps: null });
+
+    expect(parsed).not.toBeNull();
+    expect(parsed?.mainsCapacityAmps).toBeNull();
+  });
+
+  it('rejects a venue feed that is not a number', () => {
+    expect(roundTrip({ ...snapshot, mainsCapacityAmps: 'plenty' })).toBeNull();
   });
 
   it.each([
@@ -92,56 +153,75 @@ describe('parseSnapshot', () => {
   });
 
   it.each([
-    ['identity', { identity: { eventName: 'x' } }],
-    ['target mode', { target: { ...snapshot.target, calcMode: 'sideways' } }],
-    ['target numbers', { target: { ...snapshot.target, cols: 'six' } }],
-    ['supply', { supply: { ...snapshot.supply, breakerAmps: null } }],
-    ['starting corner', { routing: { ...snapshot.routing, start: 'middle' } }],
-    ['routing mode', { routing: { ...snapshot.routing, mode: 'psychic' } }],
-    ['cable layer', { routing: { ...snapshot.routing, layer: 'audio' } }],
-    ['manual routes', { routing: { ...snapshot.routing, manualData: [[{ x: 0 }]] } }],
-    ['custom cabinet', { cabinet: { ...snapshot.cabinet, custom: { id: 'custom' } } }],
-    ['custom processor', { processor: { ...snapshot.processor, custom: null } }],
-  ])('rejects a snapshot with a broken %s', (_label, patch) => {
-    expect(roundTrip({ ...snapshot, ...patch })).toBeNull();
+    ['target mode', { target: { ...screenBody.target, calcMode: 'sideways' } }],
+    ['target numbers', { target: { ...screenBody.target, cols: 'six' } }],
+    ['supply', { supply: { ...screenBody.supply, breakerAmps: null } }],
+    ['starting corner', { routing: { ...screenBody.routing, start: 'middle' } }],
+    ['routing mode', { routing: { ...screenBody.routing, mode: 'psychic' } }],
+    ['cable layer', { routing: { ...screenBody.routing, layer: 'audio' } }],
+    ['manual routes', { routing: { ...screenBody.routing, manualData: [[{ x: 0 }]] } }],
+    ['custom cabinet', { cabinet: { ...screenBody.cabinet, custom: { id: 'custom' } } }],
+    ['custom processor', { processor: { ...screenBody.processor, custom: null } }],
+  ])('rejects an event whose screen has a broken %s', (_label, patch) => {
+    expect(roundTrip({ ...snapshot, screens: [{ ...screen, ...patch }] })).toBeNull();
+  });
+
+  it('migrates a version 2 document into an event of one screen', () => {
+    const migrated = roundTrip(legacy);
+
+    expect(migrated?.version).toBe(SNAPSHOT_VERSION);
+    expect(migrated?.eventName).toBe('Lollapalooza 2026');
+    expect(migrated?.screens).toHaveLength(1);
+    expect(migrated?.screens[0].name).toBe('Main Stage');
+    expect(migrated?.activeScreenId).toBe(migrated?.screens[0].id);
+    expect(migrated?.screens[0].routing.manualData).toEqual(screenBody.routing.manualData);
+  });
+
+  it('leaves the venue feed undeclared when migrating', () => {
+    // Nobody declared one before the field existed, and inventing a capacity
+    // would put a number nobody chose into an electrical plan.
+    expect(roundTrip(legacy)?.mainsCapacityAmps).toBeNull();
   });
 
   it('migrates a version 1 snapshot, which predates the mains-voltage field', () => {
     // Everything saved before the voltage selector existed was implicitly 220 V,
     // because that is what the app hardcoded. Assuming anything else would
     // silently restate someone's electrical plan.
-    const { supply, ...rest } = snapshot;
+    const { supply, ...rest } = legacy;
     const { voltage: _dropped, ...supplyWithoutVoltage } = supply;
-    const v1 = { ...rest, version: 1, supply: supplyWithoutVoltage };
 
-    const migrated = roundTrip(v1);
+    const migrated = roundTrip({ ...rest, version: 1, supply: supplyWithoutVoltage });
 
     expect(migrated?.version).toBe(SNAPSHOT_VERSION);
-    expect(migrated?.supply.voltage).toBe(LEGACY_LINE_VOLTAGE);
-    expect(migrated?.supply.pduCapacityAmps).toBe(96);
-    expect(migrated?.routing.manualData).toEqual(snapshot.routing.manualData);
+    expect(migrated?.screens[0].supply.voltage).toBe(LEGACY_LINE_VOLTAGE);
+    expect(migrated?.screens[0].supply.pduCapacityAmps).toBe(96);
   });
 
-  it('defaults a snapshot saved before mains were a choice', () => {
+  it('defaults a screen saved before mains were a choice', () => {
     // Unlike the voltage migration, this one does NOT preserve the old
     // behaviour. A run beginning halfway up the screen was a defect in how the
     // snake was sliced, not a plan anyone drew, and auto routing is derived, so
     // nothing hand-drawn moves underneath the technician.
-    const { routing, ...rest } = snapshot;
-    const { mains: _dropped, ...routingWithoutMains } = routing;
+    const { mains: _dropped, ...routingWithoutMains } = screenBody.routing;
+    const parsed = roundTrip({
+      ...snapshot,
+      screens: [{ ...screen, routing: routingWithoutMains }],
+    });
 
-    expect(roundTrip({ ...rest, routing: routingWithoutMains })?.routing.mains).toBe('start-edge');
+    expect(parsed?.screens[0].routing.mains).toBe('start-edge');
   });
 
-  it('rejects a snapshot whose mains policy is not one we know', () => {
-    expect(
-      roundTrip({ ...snapshot, routing: { ...snapshot.routing, mains: 'sideways' } })?.routing
-        .mains,
-    ).toBe('start-edge');
+  it('falls back when the mains policy is not one we know', () => {
+    const parsed = roundTrip({
+      ...snapshot,
+      screens: [{ ...screen, routing: { ...screenBody.routing, mains: 'sideways' } }],
+    });
+
+    expect(parsed?.screens[0].routing.mains).toBe('start-edge');
   });
 
   it('rejects a version 1 snapshot that is broken in some other way', () => {
-    const { supply, ...rest } = snapshot;
+    const { supply, ...rest } = legacy;
     const { voltage: _dropped, ...supplyWithoutVoltage } = supply;
 
     expect(
@@ -154,14 +234,25 @@ describe('parseSnapshot', () => {
     ).toBeNull();
   });
 
-  it('rejects a snapshot with a non-numeric voltage', () => {
-    expect(roundTrip({ ...snapshot, supply: { ...snapshot.supply, voltage: 'mains' } })).toBeNull();
+  it('rejects a screen with a non-numeric voltage', () => {
+    expect(
+      roundTrip({
+        ...snapshot,
+        screens: [{ ...screen, supply: { ...screenBody.supply, voltage: 'mains' } }],
+      }),
+    ).toBeNull();
   });
 
   it('tolerates a missing timestamp rather than discarding the work', () => {
     const { savedAt: _dropped, ...withoutTimestamp } = snapshot;
 
-    expect(roundTrip(withoutTimestamp)?.identity.eventName).toBe('Lollapalooza 2026');
+    expect(roundTrip(withoutTimestamp)?.eventName).toBe('Lollapalooza 2026');
+  });
+
+  it('names a screen that arrived without one', () => {
+    const { name: _dropped, ...unnamed } = screen;
+
+    expect(roundTrip({ ...snapshot, screens: [unnamed] })?.screens[0].name).toBe('Screen 1');
   });
 
   it('drops unknown extra keys instead of carrying them forward', () => {
@@ -172,20 +263,26 @@ describe('parseSnapshot', () => {
   });
 });
 
+describe('newScreenId', () => {
+  it('does not hand out the same id twice', () => {
+    const ids = new Set(Array.from({ length: 200 }, newScreenId));
+
+    expect(ids.size).toBe(200);
+  });
+});
+
 describe('describeSnapshot', () => {
-  it('joins the event and the screen', () => {
-    expect(describeSnapshot(snapshot)).toBe('Lollapalooza 2026 — Main Stage');
+  it('uses the event name', () => {
+    expect(describeSnapshot(snapshot)).toBe('Lollapalooza 2026');
   });
 
-  it('falls back to whichever one is filled in', () => {
+  it('falls back to the first named screen when the event is unnamed', () => {
+    expect(describeSnapshot({ ...snapshot, eventName: '' })).toBe('Main Stage');
+  });
+
+  it('has something to call an event with nothing named at all', () => {
     expect(
-      describeSnapshot({ ...snapshot, identity: { eventName: '', screenName: 'DJ Booth' } }),
-    ).toBe('DJ Booth');
-  });
-
-  it('names an unnamed screen', () => {
-    expect(describeSnapshot({ ...snapshot, identity: { eventName: '', screenName: '' } })).toBe(
-      'Untitled screen',
-    );
+      describeSnapshot({ ...snapshot, eventName: '', screens: [{ ...screen, name: '' }] }),
+    ).toBe('Untitled event');
   });
 });

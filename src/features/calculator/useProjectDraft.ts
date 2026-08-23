@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 
 import { calculateProject, validateProject, type ProjectInput } from '../../domain/calculate';
 import { cabinets, processors, type Cabinet, type Processor } from '../../domain/catalog';
-import type { ProjectSnapshot } from '../../domain/project/snapshot';
+import type { ScreenSnapshot } from '../../domain/project/snapshot';
 
 /**
  * Default mains voltage (V). 220 matches the catalog's region and what the app
@@ -43,9 +43,10 @@ const BLANK_PROCESSOR: Processor = {
  * show, without any of them being passed through a component that doesn't use
  * them.
  */
-export function useProjectDraft(initial?: ProjectSnapshot | null) {
-  const [eventName, setEventName] = useState(initial?.identity.eventName ?? '');
-  const [screenName, setScreenName] = useState(initial?.identity.screenName ?? '');
+export function useProjectDraft(initial?: ScreenSnapshot | null) {
+  // The event name lives one level up, on the event: a show has one name and
+  // several screens, so keeping it here would mean six copies to disagree.
+  const [screenName, setScreenName] = useState(initial?.name ?? '');
 
   const [calcMode, setCalcMode] = useState<CalcMode>(initial?.target.calcMode ?? 'dimensions');
   const [targetWidthM, setTargetWidthM] = useState(initial?.target.targetWidthM ?? 4);
@@ -125,7 +126,7 @@ export function useProjectDraft(initial?: ProjectSnapshot | null) {
   };
 
   return {
-    identity: { eventName, screenName, setEventName, setScreenName },
+    identity: { screenName, setScreenName },
     target: {
       calcMode,
       setCalcMode,
@@ -166,7 +167,7 @@ export function useProjectDraft(initial?: ProjectSnapshot | null) {
     },
     /** This hook's share of the saved document. */
     snapshotSlice: {
-      identity: { eventName, screenName },
+      name: screenName,
       target: { calcMode, targetWidthM, targetHeightM, cols, rows },
       cabinet: {
         selectedId: isCustomCabinet ? 'custom' : selectedCabinetId,

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import type { ProjectCalculation } from '../../domain/calculate';
-import type { ProjectSnapshot } from '../../domain/project/snapshot';
+import type { ScreenSnapshot } from '../../domain/project/snapshot';
 import { clampRoutesToGrid } from '../../domain/routing/clamp';
 import type { CableLayer } from '../../domain/routing/palette';
 import {
@@ -46,7 +46,7 @@ const countCabinets = (routes: DrawnRoutes): number =>
  */
 export function useRoutingPlan(
   results: ProjectCalculation | null,
-  initial?: ProjectSnapshot | null,
+  initial?: ScreenSnapshot | null,
 ) {
   const [layer, setLayer] = useState<CableLayer>(initial?.routing.layer ?? 'data');
   const [priority, setPriority] = useState<RoutingPriority>(

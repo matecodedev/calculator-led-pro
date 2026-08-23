@@ -14,25 +14,38 @@ interface ProjectAlertsProps {
    * anything else — an overloaded circuit is not the same class of problem as
    * a half-typed form.
    */
-  danger: DangerAlert | null;
+  /**
+   * Physical hazards, most urgent first: the show overrunning the venue feed
+   * and this screen overrunning its own supply are both fires, and they share
+   * one channel so neither can be missed by scrolling past the other.
+   */
+  dangers: DangerAlert[];
   issues: FieldIssue[];
   exportError: string | null;
   /** Something the app did to the user's work that they need to know about. */
   notice: { message: string; onDismiss: () => void } | null;
 }
 
-export default function ProjectAlerts({ danger, issues, exportError, notice }: ProjectAlertsProps) {
+export default function ProjectAlerts({
+  dangers,
+  issues,
+  exportError,
+  notice,
+}: ProjectAlertsProps) {
   return (
     <div role="alert" aria-live="assertive">
-      {danger && (
-        <div className="px-4 py-3 bg-[#FF4444] text-black border-b-2 border-[#7F1D1D] flex items-start gap-3">
+      {dangers.map((danger) => (
+        <div
+          key={danger.headline}
+          className="px-4 py-3 bg-[#FF4444] text-black border-b-2 border-[#7F1D1D] flex items-start gap-3"
+        >
           <Zap className="w-5 h-5 shrink-0 mt-0.5" aria-hidden="true" />
           <div>
             <p className="text-[13px] font-bold uppercase tracking-widest">{danger.headline}</p>
             <p className="text-[13px] mt-0.5">{danger.detail}</p>
           </div>
         </div>
-      )}
+      ))}
 
       {exportError && (
         <p className="px-4 py-3 bg-[#2A2213] border-b border-amber-500 text-amber-200 text-xs">

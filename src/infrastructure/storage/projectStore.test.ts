@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { ProjectSnapshot } from '../../domain/project/snapshot';
+import { SNAPSHOT_VERSION, type EventSnapshot } from '../../domain/project/snapshot';
 import {
   AUTOSAVE_KEY,
   LIBRARY_KEY,
@@ -30,10 +30,9 @@ const fullStore = (): KeyValueStore => ({
   removeItem: () => {},
 });
 
-const snapshot: ProjectSnapshot = {
-  version: 2,
-  savedAt: '2026-08-17T20:00:00.000Z',
-  identity: { eventName: 'Lollapalooza 2026', screenName: 'Main Stage' },
+const screen = {
+  id: 'screen-main',
+  name: 'Main Stage',
   target: { calcMode: 'dimensions', targetWidthM: 4, targetHeightM: 2.5, cols: 6, rows: 4 },
   cabinet: {
     selectedId: 'a_nt29',
@@ -75,10 +74,21 @@ const snapshot: ProjectSnapshot = {
   },
 };
 
-const named = (name: string, eventName: string): ProjectSnapshot => ({
-  ...snapshot,
-  identity: { ...snapshot.identity, eventName, screenName: name },
-});
+const snapshot: EventSnapshot = {
+  version: SNAPSHOT_VERSION,
+  savedAt: '2026-08-17T20:00:00.000Z',
+  eventName: 'Lollapalooza 2026',
+  mainsCapacityAmps: 96,
+  screens: [screen],
+  activeScreenId: screen.id,
+} as EventSnapshot;
+
+const named = (name: string, eventName: string): EventSnapshot =>
+  ({
+    ...snapshot,
+    eventName,
+    screens: [{ ...screen, name }],
+  }) as EventSnapshot;
 
 describe('autosave', () => {
   let store: ReturnType<typeof fakeStore>;
@@ -138,7 +148,7 @@ describe('the project library', () => {
     const after = saveProject('Main Stage', named('Main Stage', 'Cosquin'), store);
 
     expect(after).toHaveLength(1);
-    expect(after[0].snapshot.identity.eventName).toBe('Cosquin');
+    expect(after[0].snapshot.eventName).toBe('Cosquin');
   });
 
   it('keeps the id stable when a screen is updated', () => {
@@ -173,7 +183,7 @@ describe('the project library', () => {
   it('drops only the corrupt entry, not the whole library', () => {
     const library = JSON.stringify([
       { id: 'a', name: 'Good', snapshot },
-      { id: 'b', name: 'Broken', snapshot: { version: 1, identity: 'nope' } },
+      { id: 'b', name: 'Broken', snapshot: { version: 3, eventName: 'x', screens: 'nope' } },
       { id: 'c', name: 'Also good', snapshot },
     ]);
 

@@ -7,7 +7,7 @@
  * storage problem must never take the calculator down with it.
  */
 
-import { parseSnapshot, type ProjectSnapshot } from '../../domain/project/snapshot';
+import { parseSnapshot, type EventSnapshot } from '../../domain/project/snapshot';
 
 export const AUTOSAVE_KEY = 'calculator-led-pro.autosave';
 export const LIBRARY_KEY = 'calculator-led-pro.projects';
@@ -22,7 +22,7 @@ export interface KeyValueStore {
 export interface SavedProject {
   id: string;
   name: string;
-  snapshot: ProjectSnapshot;
+  snapshot: EventSnapshot;
 }
 
 /** localStorage, or null where it is unavailable (private mode, embedded views). */
@@ -56,12 +56,12 @@ function writeJson(store: KeyValueStore | null, key: string, value: unknown): bo
   }
 }
 
-export function loadAutosave(store: KeyValueStore | null = browserStore()): ProjectSnapshot | null {
+export function loadAutosave(store: KeyValueStore | null = browserStore()): EventSnapshot | null {
   return parseSnapshot(readJson(store, AUTOSAVE_KEY));
 }
 
 export function saveAutosave(
-  snapshot: ProjectSnapshot,
+  snapshot: EventSnapshot,
   store: KeyValueStore | null = browserStore(),
 ): boolean {
   return writeJson(store, AUTOSAVE_KEY, snapshot);
@@ -91,7 +91,7 @@ export function listProjects(store: KeyValueStore | null = browserStore()): Save
  */
 export function saveProject(
   name: string,
-  snapshot: ProjectSnapshot,
+  snapshot: EventSnapshot,
   store: KeyValueStore | null = browserStore(),
 ): SavedProject[] {
   const trimmed = name.trim();
