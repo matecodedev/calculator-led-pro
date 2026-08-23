@@ -167,7 +167,13 @@ function parseProcessor(value: unknown): Processor | null {
   if (typeof id !== 'string' || typeof brand !== 'string' || typeof model !== 'string') return null;
   if (!isFiniteNumber(dataPorts) || !isFiniteNumber(maxPixelsPerPort)) return null;
 
-  return { id, brand, model, dataPorts, maxPixelsPerPort };
+  // Documents saved before the whole-box ceiling existed only knew the ports,
+  // which is the assumption they were computed under.
+  const maxPixelsTotal = isFiniteNumber(value.maxPixelsTotal)
+    ? value.maxPixelsTotal
+    : dataPorts * maxPixelsPerPort;
+
+  return { id, brand, model, dataPorts, maxPixelsPerPort, maxPixelsTotal };
 }
 
 /**

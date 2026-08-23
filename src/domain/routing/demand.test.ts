@@ -13,6 +13,8 @@ describe('routingDemand', () => {
       dataRuns: runs(18, 4),
       powerRuns: runs(12, 5),
       dataPortsPerProcessor: 4,
+      totalPixels: 1_000_000,
+      maxPixelsPerProcessor: 8_800_000,
     });
 
     expect(demand.dataCables).toBe(4);
@@ -28,6 +30,8 @@ describe('routingDemand', () => {
       dataRuns: planRoutes({ ...grid, capacity: 23 }),
       powerRuns: planRoutes({ ...grid, capacity: 17 }),
       dataPortsPerProcessor: 4,
+      totalPixels: 1_000_000,
+      maxPixelsPerProcessor: 8_800_000,
     });
 
     expect(Math.ceil(60 / 23)).toBe(3);
@@ -36,13 +40,52 @@ describe('routingDemand', () => {
     expect(demand.powerCables).toBe(5);
   });
 
+  it('needs a second processor when the screen outgrows one box, not its ports', () => {
+    // An MCTRL4K has sixteen ports and carries 8.8 M pixels. Sixteen times the
+    // 650 k a port moves is 10.4 M, so counting ports alone says one box is
+    // enough for a screen it cannot drive.
+    const demand = routingDemand({
+      dataRuns: runs(9, 4),
+      powerRuns: [],
+      dataPortsPerProcessor: 16,
+      totalPixels: 10_000_000,
+      maxPixelsPerProcessor: 8_800_000,
+    });
+
+    expect(demand.processorsNeeded).toBe(2);
+  });
+
+  it('takes whichever limit bites first', () => {
+    const byPorts = routingDemand({
+      dataRuns: runs(9, 12),
+      powerRuns: [],
+      dataPortsPerProcessor: 6,
+      totalPixels: 1_000_000,
+      maxPixelsPerProcessor: 8_800_000,
+    });
+
+    expect(byPorts.processorsNeeded).toBe(2);
+  });
+
   it('sizes the processor count from the cables that exist, not the theoretical minimum', () => {
     // Four data runs on a four-port box is one processor; a fifth needs a second.
     expect(
-      routingDemand({ dataRuns: runs(9, 4), powerRuns: [], dataPortsPerProcessor: 4 }),
+      routingDemand({
+        dataRuns: runs(9, 4),
+        powerRuns: [],
+        dataPortsPerProcessor: 4,
+        totalPixels: 1_000,
+        maxPixelsPerProcessor: 8_800_000,
+      }),
     ).toHaveProperty('processorsNeeded', 1);
     expect(
-      routingDemand({ dataRuns: runs(9, 5), powerRuns: [], dataPortsPerProcessor: 4 }),
+      routingDemand({
+        dataRuns: runs(9, 5),
+        powerRuns: [],
+        dataPortsPerProcessor: 4,
+        totalPixels: 1_000,
+        maxPixelsPerProcessor: 8_800_000,
+      }),
     ).toHaveProperty('processorsNeeded', 2);
   });
 
@@ -51,6 +94,8 @@ describe('routingDemand', () => {
       dataRuns: [[{ x: 0, y: 0 }], []],
       powerRuns: [[]],
       dataPortsPerProcessor: 2,
+      totalPixels: 1_000,
+      maxPixelsPerProcessor: 8_800_000,
     });
 
     expect(demand.dataCables).toBe(1);
@@ -58,14 +103,26 @@ describe('routingDemand', () => {
   });
 
   it('asks for nothing when nothing is drawn', () => {
-    const demand = routingDemand({ dataRuns: [], powerRuns: [], dataPortsPerProcessor: 4 });
+    const demand = routingDemand({
+      dataRuns: [],
+      powerRuns: [],
+      dataPortsPerProcessor: 4,
+      totalPixels: 0,
+      maxPixelsPerProcessor: 8_800_000,
+    });
 
     expect(demand).toEqual({ dataCables: 0, powerCables: 0, processorsNeeded: 0 });
   });
 
   it.each([0, -1, 2.5])('rejects a processor with %s data ports', (ports) => {
     expect(() =>
-      routingDemand({ dataRuns: [], powerRuns: [], dataPortsPerProcessor: ports }),
+      routingDemand({
+        dataRuns: [],
+        powerRuns: [],
+        dataPortsPerProcessor: ports,
+        totalPixels: 0,
+        maxPixelsPerProcessor: 8_800_000,
+      }),
     ).toThrow(RangeError);
   });
 });

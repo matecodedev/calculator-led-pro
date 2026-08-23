@@ -24,6 +24,14 @@ export interface RoutingDemandInput {
   powerRuns: GridPosition[][];
   /** Data ports on one sending box. */
   dataPortsPerProcessor: number;
+  totalPixels: number;
+  /**
+   * What the whole controller carries, which is not its ports multiplied by
+   * what a port carries. An MCTRL4K has sixteen gigabit ports moving 650 k
+   * pixels each — 10.4 M — and drives 8.8 M. Counting ports alone says one box
+   * is enough for a screen it cannot drive.
+   */
+  maxPixelsPerProcessor: number;
 }
 
 /** A half-drawn manual plan carries a trailing empty run; it is not a cable. */
@@ -34,11 +42,16 @@ export function routingDemand({
   dataRuns,
   powerRuns,
   dataPortsPerProcessor,
+  totalPixels,
+  maxPixelsPerProcessor,
 }: RoutingDemandInput): RoutingDemand {
   if (!Number.isInteger(dataPortsPerProcessor) || dataPortsPerProcessor < 1) {
     throw new RangeError(
       `a processor must have at least one data port, got ${dataPortsPerProcessor}`,
     );
+  }
+  if (!Number.isFinite(maxPixelsPerProcessor) || maxPixelsPerProcessor <= 0) {
+    throw new RangeError(`a processor must carry some pixels, got ${maxPixelsPerProcessor}`);
   }
 
   const dataCables = countCables(dataRuns);
@@ -46,6 +59,11 @@ export function routingDemand({
   return {
     dataCables,
     powerCables: countCables(powerRuns),
-    processorsNeeded: Math.ceil(dataCables / dataPortsPerProcessor),
+    // Whichever ceiling bites first: the ports to plug into, or the pixels the
+    // box can push.
+    processorsNeeded: Math.max(
+      Math.ceil(dataCables / dataPortsPerProcessor),
+      Math.ceil(totalPixels / maxPixelsPerProcessor),
+    ),
   };
 }

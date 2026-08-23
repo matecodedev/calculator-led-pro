@@ -22,6 +22,7 @@ const processor: Processor = {
   model: 'VX1000',
   dataPorts: 10,
   maxPixelsPerPort: 650_000,
+  maxPixelsTotal: 6_500_000,
 };
 
 const input: ProjectInput = {

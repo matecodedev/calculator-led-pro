@@ -1,10 +1,11 @@
-import { Settings2 } from 'lucide-react';
+import { Pencil, Settings2 } from 'lucide-react';
 
 import { cabinets, type Cabinet } from '../../../domain/catalog';
 import Field from '../../../shared/ui/Field';
 import SectionHeading from '../../../shared/ui/SectionHeading';
 import SegmentedControl from '../../../shared/ui/SegmentedControl';
 import {
+  buttonFocusClass,
   compactControlClass,
   selectControlClass,
   textControlClass,
@@ -12,13 +13,22 @@ import {
 import type { CabinetChoice, TargetControls } from '../useProjectDraft';
 
 /** The editable fields of a custom cabinet, in the order a spec sheet lists them. */
+/**
+ * Every number the app calculates with.
+ *
+ * Weight and average power were missing, so a technician could describe their
+ * own cabinet and still have the rigging divide by a default weight they never
+ * chose and the expected draw use an average they never saw.
+ */
 const CUSTOM_FIELDS = [
   { key: 'width', label: 'Ancho (mm)' },
   { key: 'height', label: 'Alto (mm)' },
   { key: 'resX', label: 'Res X (px)' },
   { key: 'resY', label: 'Res Y (px)' },
-  { key: 'maxPower', label: 'Potencia máx. (W)' },
   { key: 'pitch', label: 'Pitch (mm)' },
+  { key: 'maxPower', label: 'Potencia máx. (W)' },
+  { key: 'avgPower', label: 'Potencia media (W)' },
+  { key: 'weight', label: 'Peso (kg)' },
 ] as const satisfies readonly { key: keyof Cabinet; label: string }[];
 
 interface CabinetPanelProps {
@@ -27,7 +37,7 @@ interface CabinetPanelProps {
 }
 
 export default function CabinetPanel({ choice, target }: CabinetPanelProps) {
-  const { cabinet, selectedId, isCustom, custom, select, updateCustom } = choice;
+  const { cabinet, selectedId, isCustom, custom, select, updateCustom, editSelected } = choice;
 
   return (
     <div className="p-6">
@@ -61,6 +71,24 @@ export default function CabinetPanel({ choice, target }: CabinetPanelProps) {
             </select>
           )}
         </Field>
+
+        {!isCustom && (
+          <div className="flex flex-wrap items-center gap-3 -mt-1">
+            <button
+              type="button"
+              onClick={editSelected}
+              className={`flex items-center gap-2 px-3 py-2 min-h-11 text-[11px] font-bold uppercase tracking-wider rounded-sm border border-[#444] text-neutral-300 hover:text-white transition-colors ${buttonFocusClass}`}
+            >
+              <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+              Editar estos datos
+            </button>
+            <span className="text-[11px] text-neutral-500">
+              {cabinet.spec
+                ? `Ficha: ${cabinet.spec.source} · ${cabinet.spec.checkedOn}`
+                : 'Datos sin verificar contra hoja del fabricante'}
+            </span>
+          </div>
+        )}
 
         {isCustom && (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-[#161616] p-3 border border-[#333]">

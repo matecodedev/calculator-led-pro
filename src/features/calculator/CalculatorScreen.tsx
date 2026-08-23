@@ -95,6 +95,7 @@ function blankScreen(): ScreenSnapshot {
         model: 'Processor',
         dataPorts: 4,
         maxPixelsPerPort: 650000,
+        maxPixelsTotal: 4 * 650_000,
       },
     },
     supply: { voltage: 220, pduCapacityAmps: 96, breakerAmps: 16, cableLoopAmps: 16 },
@@ -365,6 +366,8 @@ function ScreenEditor({ initial, eventDanger, exportError, onScreenChange }: Scr
         dataRuns: plan.routesFor('data'),
         powerRuns: plan.routesFor('power'),
         dataPortsPerProcessor: draft.processorChoice.processor.dataPorts,
+        totalPixels: results.totalPixels,
+        maxPixelsPerProcessor: draft.processorChoice.processor.maxPixelsTotal,
       })
     : { dataCables: 0, powerCables: 0, processorsNeeded: 0 };
 

@@ -39,6 +39,7 @@ const BLANK_PROCESSOR: Processor = {
   model: 'Processor',
   dataPorts: 4,
   maxPixelsPerPort: 650000,
+  maxPixelsTotal: 4 * 650_000,
 };
 
 /**
@@ -149,6 +150,29 @@ export function useProjectDraft(initial?: ScreenSnapshot | null) {
     [input, issues],
   );
 
+  /**
+   * Copies whatever is selected into the editable slot and switches to it.
+   *
+   * The catalog arrived with this app carrying no provenance, so a technician
+   * with the real datasheet in hand has to be able to correct it. The catalog
+   * itself stays untouched — this makes their own copy, which is also the only
+   * honest thing to do with figures nobody has verified.
+   */
+  const editSelectedCabinet = () => {
+    setCustomCabinet({
+      ...cabinet,
+      id: 'custom',
+      brand: cabinet.brand,
+      model: `${cabinet.model} (editado)`,
+    });
+    setIsCustomCabinet(true);
+  };
+
+  const editSelectedProcessor = () => {
+    setCustomProcessor({ ...processor, id: 'custom_p', model: `${processor.model} (editado)` });
+    setIsCustomProcessor(true);
+  };
+
   /** Picking "custom" from the dropdown switches to the editable cabinet. */
   const selectCabinet = (id: string) => {
     setIsCustomCabinet(id === 'custom');
@@ -181,6 +205,7 @@ export function useProjectDraft(initial?: ScreenSnapshot | null) {
       custom: customCabinet,
       select: selectCabinet,
       updateCustom: setCustomCabinet,
+      editSelected: editSelectedCabinet,
     },
     processorChoice: {
       processor,
@@ -189,6 +214,7 @@ export function useProjectDraft(initial?: ScreenSnapshot | null) {
       custom: customProcessor,
       select: selectProcessor,
       updateCustom: setCustomProcessor,
+      editSelected: editSelectedProcessor,
     },
     supply: {
       voltage,
