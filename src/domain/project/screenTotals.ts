@@ -15,6 +15,7 @@ import {
   type ProjectInput,
 } from '../calculate';
 import { cabinets, processors, type Cabinet, type Processor } from '../catalog';
+import { riggingLoad, type RiggingLoad } from '../rigging/load';
 import { routingDemand, type RoutingDemand } from '../routing/demand';
 import { planRoutes, type GridPosition } from '../routing/serpentine';
 import type { ScreenTotals } from './eventSummary';
@@ -63,6 +64,7 @@ export interface ScreenPlan {
   dataRoutes: GridPosition[][];
   powerRoutes: GridPosition[][];
   demand: RoutingDemand;
+  rigging: RiggingLoad;
   totals: ScreenTotals;
 }
 
@@ -107,6 +109,14 @@ export function screenPlan(screen: ScreenSnapshot): ScreenPlan | null {
     screen,
     input,
     calc,
+    rigging: riggingLoad({
+      mount: screen.rigging.mount,
+      cols: calc.cols,
+      rows: calc.rows,
+      cabinetWeightKg: input.cabinet.weight,
+      points: screen.rigging.points,
+      pointCapacityKg: screen.rigging.pointCapacityKg,
+    }),
     dataRoutes,
     powerRoutes,
     demand,
