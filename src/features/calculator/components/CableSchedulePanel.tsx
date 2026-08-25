@@ -3,6 +3,7 @@ import { Cable } from 'lucide-react';
 import { cableSchedule } from '../../../domain/routing/schedule';
 import type { GridPosition } from '../../../domain/routing/serpentine';
 import Field from '../../../shared/ui/Field';
+import NumberInput from '../../../shared/ui/NumberInput';
 import SectionHeading from '../../../shared/ui/SectionHeading';
 import { textControlClass } from '../../../shared/ui/controls';
 import type { InstallControls } from '../useProjectDraft';
@@ -72,14 +73,10 @@ export default function CableSchedulePanel({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
         <Field label="Altura del borde inferior (m)">
           {(id) => (
-            <input
+            <NumberInput
               id={id}
-              type="number"
-              min="0"
-              step="0.1"
-              inputMode="decimal"
               value={install.trimHeightM}
-              onChange={(e) => install.setTrimHeightM(Math.max(0, Number(e.target.value) || 0))}
+              onChange={(next) => install.setTrimHeightM(next !== null && next > 0 ? next : 0)}
               className={textControlClass}
             />
           )}
@@ -87,18 +84,11 @@ export default function CableSchedulePanel({
 
         <Field label="Distancia a la técnica (m)">
           {(id) => (
-            <input
+            <NumberInput
               id={id}
-              type="number"
-              min="0"
-              step="0.5"
-              inputMode="decimal"
               placeholder="Sin declarar"
-              value={install.distanceToDataM ?? ''}
-              onChange={(e) => {
-                const next = Number(e.target.value);
-                install.setDistanceToDataM(e.target.value === '' || next < 0 ? null : next);
-              }}
+              value={install.distanceToDataM}
+              onChange={(next) => install.setDistanceToDataM(next)}
               className={textControlClass}
             />
           )}
@@ -106,18 +96,11 @@ export default function CableSchedulePanel({
 
         <Field label="Distancia a la usina (m)">
           {(id) => (
-            <input
+            <NumberInput
               id={id}
-              type="number"
-              min="0"
-              step="0.5"
-              inputMode="decimal"
               placeholder="Sin declarar"
-              value={install.distanceToPowerM ?? ''}
-              onChange={(e) => {
-                const next = Number(e.target.value);
-                install.setDistanceToPowerM(e.target.value === '' || next < 0 ? null : next);
-              }}
+              value={install.distanceToPowerM}
+              onChange={(next) => install.setDistanceToPowerM(next)}
               className={textControlClass}
             />
           )}

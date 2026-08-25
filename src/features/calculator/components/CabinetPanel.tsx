@@ -1,7 +1,9 @@
 import { Pencil, Settings2 } from 'lucide-react';
 
 import { cabinets, type Cabinet } from '../../../domain/catalog';
+import type { NumericMode } from '../../../shared/number/decimalInput';
 import Field from '../../../shared/ui/Field';
+import NumberInput from '../../../shared/ui/NumberInput';
 import SectionHeading from '../../../shared/ui/SectionHeading';
 import SegmentedControl from '../../../shared/ui/SegmentedControl';
 import {
@@ -21,15 +23,16 @@ import type { CabinetChoice, TargetControls } from '../useProjectDraft';
  * chose and the expected draw use an average they never saw.
  */
 const CUSTOM_FIELDS = [
-  { key: 'width', label: 'Ancho (mm)' },
-  { key: 'height', label: 'Alto (mm)' },
-  { key: 'resX', label: 'Res X (px)' },
-  { key: 'resY', label: 'Res Y (px)' },
-  { key: 'pitch', label: 'Pitch (mm)' },
-  { key: 'maxPower', label: 'Potencia máx. (W)' },
-  { key: 'avgPower', label: 'Potencia media (W)' },
-  { key: 'weight', label: 'Peso (kg)' },
-] as const satisfies readonly { key: keyof Cabinet; label: string }[];
+  { key: 'width', label: 'Ancho (mm)', mode: 'decimal' },
+  { key: 'height', label: 'Alto (mm)', mode: 'decimal' },
+  { key: 'resX', label: 'Res X (px)', mode: 'integer' },
+  { key: 'resY', label: 'Res Y (px)', mode: 'integer' },
+  // A pitch is 2.6 or 3.9 far more often than it is a whole millimetre.
+  { key: 'pitch', label: 'Pitch (mm)', mode: 'decimal' },
+  { key: 'maxPower', label: 'Potencia máx. (W)', mode: 'decimal' },
+  { key: 'avgPower', label: 'Potencia media (W)', mode: 'decimal' },
+  { key: 'weight', label: 'Peso (kg)', mode: 'decimal' },
+] as const satisfies readonly { key: keyof Cabinet; label: string; mode: NumericMode }[];
 
 interface CabinetPanelProps {
   choice: CabinetChoice;
@@ -92,16 +95,14 @@ export default function CabinetPanel({ choice, target }: CabinetPanelProps) {
 
         {isCustom && (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-[#161616] p-3 border border-[#333]">
-            {CUSTOM_FIELDS.map(({ key, label }) => (
+            {CUSTOM_FIELDS.map(({ key, label, mode }) => (
               <Field key={key} label={label}>
                 {(id) => (
-                  <input
+                  <NumberInput
                     id={id}
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
+                    mode={mode}
                     value={custom[key]}
-                    onChange={(e) => updateCustom({ ...custom, [key]: Number(e.target.value) })}
+                    onChange={(next) => updateCustom({ ...custom, [key]: next ?? 0 })}
                     className={compactControlClass}
                   />
                 )}
@@ -124,28 +125,22 @@ export default function CabinetPanel({ choice, target }: CabinetPanelProps) {
           <div className="grid grid-cols-2 gap-4">
             <Field label="Ancho (m)">
               {(id) => (
-                <input
+                <NumberInput
                   id={id}
-                  type="number"
-                  inputMode="decimal"
                   value={target.targetWidthM}
-                  onChange={(e) => target.setTargetWidthM(Number(e.target.value))}
-                  min={0.5}
-                  step={0.5}
+                  onChange={(next) => target.setTargetWidthM(next ?? 0)}
+                  placeholder="ej. 4,5"
                   className={textControlClass}
                 />
               )}
             </Field>
             <Field label="Alto (m)">
               {(id) => (
-                <input
+                <NumberInput
                   id={id}
-                  type="number"
-                  inputMode="decimal"
                   value={target.targetHeightM}
-                  onChange={(e) => target.setTargetHeightM(Number(e.target.value))}
-                  min={0.5}
-                  step={0.5}
+                  onChange={(next) => target.setTargetHeightM(next ?? 0)}
+                  placeholder="ej. 2,5"
                   className={textControlClass}
                 />
               )}
@@ -155,28 +150,22 @@ export default function CabinetPanel({ choice, target }: CabinetPanelProps) {
           <div className="grid grid-cols-2 gap-4">
             <Field label="Columnas (horizontal)">
               {(id) => (
-                <input
+                <NumberInput
                   id={id}
-                  type="number"
-                  inputMode="numeric"
+                  mode="integer"
                   value={target.cols}
-                  onChange={(e) => target.setCols(Number(e.target.value))}
-                  min={1}
-                  step={1}
+                  onChange={(next) => target.setCols(next ?? 0)}
                   className={textControlClass}
                 />
               )}
             </Field>
             <Field label="Filas (vertical)">
               {(id) => (
-                <input
+                <NumberInput
                   id={id}
-                  type="number"
-                  inputMode="numeric"
+                  mode="integer"
                   value={target.rows}
-                  onChange={(e) => target.setRows(Number(e.target.value))}
-                  min={1}
-                  step={1}
+                  onChange={(next) => target.setRows(next ?? 0)}
                   className={textControlClass}
                 />
               )}

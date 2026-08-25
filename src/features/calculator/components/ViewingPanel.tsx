@@ -1,7 +1,8 @@
 import { Eye } from 'lucide-react';
 
-import { viewingAdvice } from '../../../domain/led-array/viewing';
+import { viewingAdvice, type ViewingAdvice } from '../../../domain/led-array/viewing';
 import Field from '../../../shared/ui/Field';
+import NumberInput from '../../../shared/ui/NumberInput';
 import SectionHeading from '../../../shared/ui/SectionHeading';
 import { textControlClass } from '../../../shared/ui/controls';
 import type { InstallControls } from '../useProjectDraft';
@@ -13,20 +14,13 @@ interface ViewingPanelProps {
 
 const m = (value: number) => `${value.toFixed(1)} m`;
 
-/**
- * Whether the pitch suits the room.
- *
- * The app could say what a screen does once the panel was chosen. It could not
- * help choose it, which is the decision that happens first and costs the most.
- */
-export default function ViewingPanel({ install, pitchMm }: ViewingPanelProps) {
-  const advice = viewingAdvice({ pitchMm, audienceDistanceM: install.closestViewerM });
-
-  const verdict = {
+/** What the panel concludes, once there is both a pitch and a declared seat. */
+function verdictFor(advice: ViewingAdvice, closestViewerM: number | null, pitchMm: number) {
+  return {
     'too-close': {
       tone: 'text-[#FF4444] border-[#FF4444]',
       title: 'La primera fila está muy cerca',
-      body: `A ${m(install.closestViewerM ?? 0)} se van a ver los píxeles. Para este pitch la fila más cercana debería estar a ${m(advice.minimumDistanceM)} o más.`,
+      body: `A ${m(closestViewerM ?? 0)} se van a ver los píxeles. Para este pitch la fila más cercana debería estar a ${m(advice.minimumDistanceM)} o más.`,
     },
     acceptable: {
       tone: 'text-[#CCFF00] border-[#2F5D1F]',
@@ -36,9 +30,27 @@ export default function ViewingPanel({ install, pitchMm }: ViewingPanelProps) {
     'finer-than-needed': {
       tone: 'text-amber-400 border-amber-500',
       title: 'Más fino de lo que la sala puede ver',
-      body: `Desde ${m(install.closestViewerM ?? 0)} nadie distingue un píxel de ${pitchMm} mm. Un panel de hasta ${advice.coarsestUsefulPitchMm?.toFixed(1)} mm se vería igual desde todas las butacas y cuesta menos.`,
+      body: `Desde ${m(closestViewerM ?? 0)} nadie distingue un píxel de ${pitchMm} mm. Un panel de hasta ${advice.coarsestUsefulPitchMm?.toFixed(1)} mm se vería igual desde todas las butacas y cuesta menos.`,
     },
   }[advice.verdict ?? 'acceptable'];
+}
+
+/**
+ * Whether the pitch suits the room.
+ *
+ * The app could say what a screen does once the panel was chosen. It could not
+ * help choose it, which is the decision that happens first and costs the most.
+ */
+export default function ViewingPanel({ install, pitchMm }: ViewingPanelProps) {
+  // A cabinet being described has no pitch yet — the field is empty, or holds
+  // the 0 an empty field stands for. There is nothing to advise from, and the
+  // arithmetic refuses to run on it, so the panel waits instead of throwing:
+  // one unfinished field must never take the whole calculator down.
+  const advice =
+    pitchMm > 0 ? viewingAdvice({ pitchMm, audienceDistanceM: install.closestViewerM }) : null;
+
+  const verdict =
+    advice && advice.verdict !== null ? verdictFor(advice, install.closestViewerM, pitchMm) : null;
 
   return (
     <div className="p-6 border-b border-[#333] bg-[#0F0F0F]">
@@ -49,18 +61,13 @@ export default function ViewingPanel({ install, pitchMm }: ViewingPanelProps) {
       <div className="space-y-4">
         <Field label="Butaca más cercana (m)">
           {(id) => (
-            <input
+            <NumberInput
               id={id}
-              type="number"
-              min="0.5"
-              step="0.5"
-              inputMode="decimal"
               placeholder="Sin declarar"
-              value={install.closestViewerM ?? ''}
-              onChange={(e) => {
-                const next = Number(e.target.value);
-                install.setClosestViewerM(e.target.value === '' || next <= 0 ? null : next);
-              }}
+              value={install.closestViewerM}
+              onChange={(next) =>
+                install.setClosestViewerM(next !== null && next > 0 ? next : null)
+              }
               className={textControlClass}
             />
           )}
@@ -69,19 +76,23 @@ export default function ViewingPanel({ install, pitchMm }: ViewingPanelProps) {
         <div className="border border-[#333] bg-black p-3 font-mono text-[11px] uppercase space-y-1">
           <div className="flex justify-between">
             <span className="text-neutral-400">Pitch</span>
-            <span className="text-neutral-200">{pitchMm} mm</span>
+            <span className="text-neutral-200">{advice ? `${pitchMm} mm` : '—'}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-neutral-400">Mínimo de oficio</span>
-            <span className="text-neutral-200">{m(advice.minimumDistanceM)}</span>
+            <span className="text-neutral-200">{advice ? m(advice.minimumDistanceM) : '—'}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-neutral-400">Deja de notarse el píxel</span>
-            <span className="text-neutral-200">{m(advice.retinaDistanceM)}</span>
+            <span className="text-neutral-200">{advice ? m(advice.retinaDistanceM) : '—'}</span>
           </div>
         </div>
 
-        {advice.verdict === null ? (
+        {advice === null ? (
+          <p className="text-[11px] text-neutral-500">
+            Declarar el pitch del gabinete para saber si le sirve a la sala.
+          </p>
+        ) : verdict === null ? (
           <p className="text-[11px] text-neutral-500">
             Declarar la butaca más cercana para saber si este pitch le sirve a la sala.
           </p>

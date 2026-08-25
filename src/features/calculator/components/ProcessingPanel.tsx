@@ -4,6 +4,7 @@ import type { ProjectCalculation } from '../../../domain/calculate';
 import type { RoutingDemand } from '../../../domain/routing/demand';
 import { processors } from '../../../domain/catalog';
 import Field from '../../../shared/ui/Field';
+import NumberInput from '../../../shared/ui/NumberInput';
 import SectionHeading from '../../../shared/ui/SectionHeading';
 import StatTile from '../../../shared/ui/StatTile';
 import {
@@ -72,74 +73,55 @@ export default function ProcessingPanel({ choice, results, demand }: ProcessingP
           <div className="grid grid-cols-2 gap-3 bg-[#161616] p-3 border border-[#333]">
             <Field label="Puertos de salida">
               {(id) => (
-                <input
+                <NumberInput
                   id={id}
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  step={1}
+                  mode="integer"
                   value={custom.dataPorts}
-                  onChange={(e) => updateCustom({ ...custom, dataPorts: Number(e.target.value) })}
+                  onChange={(next) => updateCustom({ ...custom, dataPorts: next ?? 0 })}
                   className={compactControlClass}
                 />
               )}
             </Field>
             <Field label="Píxeles por puerto">
               {(id) => (
-                <input
+                <NumberInput
                   id={id}
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
+                  mode="integer"
                   value={custom.maxPixelsPerPort}
-                  onChange={(e) =>
-                    updateCustom({ ...custom, maxPixelsPerPort: Number(e.target.value) })
-                  }
+                  onChange={(next) => updateCustom({ ...custom, maxPixelsPerPort: next ?? 0 })}
                   className={compactControlClass}
                 />
               )}
             </Field>
             <Field label="Píxeles totales del equipo">
               {(id) => (
-                <input
+                <NumberInput
                   id={id}
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
+                  mode="integer"
                   value={custom.maxPixelsTotal}
-                  onChange={(e) =>
-                    updateCustom({ ...custom, maxPixelsTotal: Number(e.target.value) })
-                  }
+                  onChange={(next) => updateCustom({ ...custom, maxPixelsTotal: next ?? 0 })}
                   className={compactControlClass}
                 />
               )}
             </Field>
             <Field label="Canvas máx. ancho (px)">
               {(id) => (
-                <input
+                <NumberInput
                   id={id}
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
+                  mode="integer"
                   value={custom.maxCanvasWidth}
-                  onChange={(e) =>
-                    updateCustom({ ...custom, maxCanvasWidth: Number(e.target.value) })
-                  }
+                  onChange={(next) => updateCustom({ ...custom, maxCanvasWidth: next ?? 0 })}
                   className={compactControlClass}
                 />
               )}
             </Field>
             <Field label="Canvas máx. alto (px)">
               {(id) => (
-                <input
+                <NumberInput
                   id={id}
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
+                  mode="integer"
                   value={custom.maxCanvasHeight}
-                  onChange={(e) =>
-                    updateCustom({ ...custom, maxCanvasHeight: Number(e.target.value) })
-                  }
+                  onChange={(next) => updateCustom({ ...custom, maxCanvasHeight: next ?? 0 })}
                   className={compactControlClass}
                 />
               )}
