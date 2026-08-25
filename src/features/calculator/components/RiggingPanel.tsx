@@ -3,6 +3,7 @@ import { Anchor } from 'lucide-react';
 import type { ProjectCalculation } from '../../../domain/calculate';
 import { riggingLoad } from '../../../domain/rigging/load';
 import Field from '../../../shared/ui/Field';
+import NumberInput from '../../../shared/ui/NumberInput';
 import SectionHeading from '../../../shared/ui/SectionHeading';
 import SegmentedControl from '../../../shared/ui/SegmentedControl';
 import StatTile from '../../../shared/ui/StatTile';
@@ -59,18 +60,12 @@ export default function RiggingPanel({ rigging, cabinet, results }: RiggingPanel
           {flown && (
             <Field label="Puntos de izaje">
               {(id) => (
-                <input
+                <NumberInput
                   id={id}
-                  type="number"
-                  min="1"
-                  step="1"
-                  inputMode="numeric"
+                  mode="integer"
                   placeholder="Sin declarar"
-                  value={rigging.points ?? ''}
-                  onChange={(e) => {
-                    const next = Number(e.target.value);
-                    rigging.setPoints(e.target.value === '' || next < 1 ? null : Math.floor(next));
-                  }}
+                  value={rigging.points}
+                  onChange={(next) => rigging.setPoints(next !== null && next >= 1 ? next : null)}
                   className={textControlClass}
                 />
               )}
@@ -79,17 +74,13 @@ export default function RiggingPanel({ rigging, cabinet, results }: RiggingPanel
 
           <Field label={flown ? 'Carga por punto (kg)' : 'Límite del gabinete (kg)'}>
             {(id) => (
-              <input
+              <NumberInput
                 id={id}
-                type="number"
-                min="1"
-                inputMode="numeric"
                 placeholder="Sin declarar"
-                value={rigging.pointCapacityKg ?? ''}
-                onChange={(e) => {
-                  const next = Number(e.target.value);
-                  rigging.setPointCapacityKg(e.target.value === '' || next <= 0 ? null : next);
-                }}
+                value={rigging.pointCapacityKg}
+                onChange={(next) =>
+                  rigging.setPointCapacityKg(next !== null && next > 0 ? next : null)
+                }
                 className={textControlClass}
               />
             )}

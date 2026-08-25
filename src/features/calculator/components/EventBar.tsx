@@ -3,6 +3,7 @@ import { Copy, Layers, Plus, Trash2 } from 'lucide-react';
 import type { EventSummary } from '../../../domain/project/eventSummary';
 import type { ScreenSnapshot } from '../../../domain/project/snapshot';
 import Field from '../../../shared/ui/Field';
+import NumberInput from '../../../shared/ui/NumberInput';
 import {
   buttonFocusClass,
   selectControlClass,
@@ -64,19 +65,12 @@ export default function EventBar({
 
         <Field label="Acometida del venue (A)" className="sm:w-48">
           {(id) => (
-            <input
+            <NumberInput
               id={id}
-              type="number"
-              min="1"
-              inputMode="numeric"
               name="venue-feed"
-              autoComplete="off"
               placeholder="Sin declarar"
-              value={mainsCapacityAmps ?? ''}
-              onChange={(e) => {
-                const next = Number(e.target.value);
-                onMainsCapacityChange(e.target.value === '' || next <= 0 ? null : next);
-              }}
+              value={mainsCapacityAmps}
+              onChange={(next) => onMainsCapacityChange(next !== null && next > 0 ? next : null)}
               className={textControlClass}
             />
           )}
